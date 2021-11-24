@@ -1,5 +1,7 @@
-// Include header.h file in any other file uses clk
+#ifndef HEADER
+#define HEADER
 
+// Include header.h file in any other file uses clk
 #include <stdio.h>      //if you don't use scanf/printf change this include
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -67,3 +69,5 @@ void destroyClk(bool terminateAll)
         killpg(getpgrp(), SIGINT);
     }
 }
+
+#endif
