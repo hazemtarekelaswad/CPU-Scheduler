@@ -11,8 +11,10 @@
 ### Clone the repo from github to your local machine
 `git clone <url>`
 ### Add and commit changes
-`git add .`
-`git commit -m "commit msg"`
+```
+git add .
+git commit -m "commit msg"
+```
 ### Push your changes
 `git push origin <branch name>`
 ### Pull the changes
