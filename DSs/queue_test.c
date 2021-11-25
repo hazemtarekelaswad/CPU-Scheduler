@@ -2,16 +2,16 @@
 #include "queue.h"
 
 int main () {
-    struct Queue* queue = queue_construct();
+    struct Queue* queue = qConstruct();
     for (int i = 0; i < 23; ++i) {
-        queue_enqueue(queue, i);
-        queue_print(queue);
-        printf("   %d", queue_front(queue));
+        qEnqueue(queue, i);
+        qPrint(queue);
+        printf("   %d", qFront(queue));
         puts("");
     }
-    queue_dequeue(queue);
-    queue_print(queue);
-    printf("   %d", queue_front(queue));
+    qDequeue(queue);
+    qPrint(queue);
+    printf("   %d", qFront(queue));
     puts("");
     
     return 0;

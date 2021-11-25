@@ -16,10 +16,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef int value_type; // modifiable according to the value type you want
+typedef int valueType; // modifiable according to the value type you want
 
 struct Node {
-    value_type value;
+    valueType value;
     struct Node* next;
 };
 
@@ -28,38 +28,38 @@ struct Queue {
     struct Node* front;
 };
 
-struct Queue* queue_construct() {
+struct Queue* qConstruct() {
     struct Queue* queue = (struct Queue*)malloc(sizeof(struct Queue));
     queue->back = queue->front = NULL;
     return queue;
 }
 
-bool queue_is_empty(struct Queue* queue) {
+bool qIsEmpty(struct Queue* queue) {
     return (queue->back == NULL && queue->front == NULL);
 }
 
-value_type queue_front(struct Queue* queue) {
-    if (queue_is_empty(queue)) 
+valueType qFront(struct Queue* queue) {
+    if (qIsEmpty(queue)) 
         return -1;   // Assuming all values are non-negatives
     return queue->front->value;
 }
 
-void queue_enqueue(struct Queue* queue, value_type value) {
-    struct Node* new_node = (struct Node*)malloc(sizeof(struct Node));
-    new_node->value = value;
-    new_node->next = NULL;
+void qEnqueue(struct Queue* queue, valueType value) {
+    struct Node* newNode = (struct Node*)malloc(sizeof(struct Node));
+    newNode->value = value;
+    newNode->next = NULL;
 
-    if (queue_is_empty(queue))
-        queue->front = queue->back = new_node;
+    if (qIsEmpty(queue))
+        queue->front = queue->back = newNode;
     else {
-        queue->back->next = new_node;
-        queue->back = new_node;
+        queue->back->next = newNode;
+        queue->back = newNode;
     }
-    new_node = NULL;
+    newNode = NULL;
 }
 
-bool queue_dequeue(struct Queue* queue) {
-    if (queue_is_empty(queue))
+bool qDequeue(struct Queue* queue) {
+    if (qIsEmpty(queue))
         return false;
     struct Node* temp = queue->front;
     queue->front = queue->front->next;
@@ -70,13 +70,13 @@ bool queue_dequeue(struct Queue* queue) {
     
 }
 
-void queue_destruct(struct Queue* queue) {
-    while (!queue_is_empty(queue))
-        queue_dequeue(queue);
+void qDestruct(struct Queue* queue) {
+    while (!qIsEmpty(queue))
+        qDequeue(queue);
     queue = NULL;
 }
 
-void queue_print(struct Queue* queue) {
+void qPrint(struct Queue* queue) {
     struct Node* trav = queue->front;
     while (trav) {
         printf("%d ", trav->value);
