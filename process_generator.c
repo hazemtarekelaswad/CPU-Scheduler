@@ -18,12 +18,12 @@ int main(int argc, char * argv[])
 
     // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.
     puts("Choose one of the following scheduling algorithms: ");
-    pus("1. Non-preemptive Highest Priority First (HPF)");
-    pus("2. Shortest Remaining time Next (SRTN)");
-    pus("3. Round Robin (RR)");
+    puts("1. Non-preemptive Highest Priority First (HPF)");
+    puts("2. Shortest Remaining time Next (SRTN)");
+    puts("3. Round Robin (RR)");
 
     int chosenAlgo;
-    scanf("Enter the algorithm's number: %d", &chosenAlgo);
+    scanf("%d", &chosenAlgo);
     switch(chosenAlgo) {
     case 1:
         // Do something  HPF
@@ -60,7 +60,7 @@ int main(int argc, char * argv[])
         printf("current time is %d\n", x);
     }
 
-}
+
     
 
 
