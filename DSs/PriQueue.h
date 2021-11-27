@@ -1,3 +1,18 @@
+/* 
+    This priority queue assumes that the lower the priority value, 
+    the highest priority it is. the lower values are at the front of
+    queue.
+
+    Notice: The front of the queue is the head of the linked list
+    and the back of the queue is the tail of the linked list.
+
+      front              back
+       |                  |
+    --------------------------
+    |   |->|   |->|   |->|   |
+    -------------------------
+*/
+
 #ifndef PRI_QUEUE
 #define PRI_QUEUE
 
