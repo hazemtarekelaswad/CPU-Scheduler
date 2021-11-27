@@ -5,7 +5,6 @@ void clearResources(int);
 int main(int argc, char * argv[])
 {
     signal(SIGINT, clearResources);
-    // TODO Initialization
     // 1. Read the input files.
     if (argc != 2) {
         perror("ERROR! Not enough arguments\n");
@@ -13,7 +12,9 @@ int main(int argc, char * argv[])
     }
 
     // @husseinAhmed10: reads an input file specified as cmd argument and put it in processes.
-    inputFile(arg[1]);  
+    
+    struct Process* processes;  //! array of processes, DON'T forget to DELETE it later
+    int numOfProcesses = readFile(argv[1], &processes); // returns the number of processes created
 
 
     // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.
@@ -35,7 +36,7 @@ int main(int argc, char * argv[])
         // Do something  RR
         break;
     default:
-        perror("ERROR! Invalid number\n");
+        perror("ERROR! Invalid choice number\n");
         exit(-1);
     }
 
@@ -53,17 +54,12 @@ int main(int argc, char * argv[])
             execl("scheduler.out", "scheduler.out", NULL);
     }
 
-    // If you are the parent (process_generator)
+    // If you are the (process_generator)
     initClk();
     while (1) {
         int x = getClk();
         printf("current time is %d\n", x);
     }
-
-
-    
-
-
     
     // TODO Generation Main Loop
     // 5. Create a data structure for processes and provide it with its parameters.
