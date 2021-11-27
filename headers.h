@@ -1,7 +1,9 @@
+// Include header.h file in any other file uses clk
+
 #ifndef HEADER
 #define HEADER
 
-// Include header.h file in any other file uses clk
+// Includes
 #include <stdio.h>      //if you don't use scanf/printf change this include
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -15,11 +17,21 @@
 #include <unistd.h>
 #include <signal.h>
 
+// Type definitions
 typedef short bool;
 #define true 1
 #define false 0
 
 #define SHKEY 300
+
+// Process struct
+struct Process {
+    int id;
+    int arrivalTime;
+    int priority;
+    int runningTime;
+    // Add any process-related data 
+};
 
 
 ///==============================
