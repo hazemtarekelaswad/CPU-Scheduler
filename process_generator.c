@@ -1,6 +1,21 @@
 #include "headers.h"
+#include "DSs/PriQueue.h"
 
 void clearResources(int);
+
+
+struct AlgorithmMsg {
+    long type;
+    int chosenAlgo;
+    int parameter;
+};
+
+struct ProcessMsg {
+    long type;
+    struct Process process;
+};
+
+int msgQueueID;
 
 int main(int argc, char * argv[])
 {
@@ -23,17 +38,26 @@ int main(int argc, char * argv[])
     puts("2. Shortest Remaining time Next (SRTN)");
     puts("3. Round Robin (RR)");
 
+
     int chosenAlgo;
     scanf("%d", &chosenAlgo);
+
+    struct AlgorithmMsg algoMsg;
+    algoMsg.type = 1;   // any type
+    algoMsg.chosenAlgo = chosenAlgo;
+
     switch(chosenAlgo) {
     case 1:
-        // Do something  HPF
+        // HPF
+        algoMsg.parameter = -1; // No parameters
         break;
     case 2:
-        // Do something  SRTN
+        // SRTN
+        algoMsg.parameter = -1; // No parameters
         break;
     case 3:
-        // Do something  RR
+        // RR
+        algoMsg.parameter = 5; // There exist a quantum
         break;
     default:
         perror("ERROR! Invalid choice number\n");
@@ -56,15 +80,43 @@ int main(int argc, char * argv[])
 
     // If you are the (process_generator)
     initClk();
-    while (1) {
-        int x = getClk();
-        printf("current time is %d\n", x);
-    }
     
     // TODO Generation Main Loop
     // 5. Create a data structure for processes and provide it with its parameters.
     // 6. Send the information to the scheduler at the appropriate time.
     // 7. Clear clock resources
+
+    // 1. Create msg queue
+    system("touch Keys/gen_scheduler_msgQ");
+    int fileKey = ftok("Keys/gen_scheduler_msgQ", 'A');
+
+    msgQueueID = msgget(fileKey, 0666 | IPC_CREAT);
+    if (msgQueueID == -1) {
+        perror("ERROR occured during creating the message queue\n");
+        exit(-1);
+    }
+
+    // 2. Send the algo choise and parameters to the scheduler
+    int isSent = msgsnd(msgQueueID, &algoMsg, sizeof(algoMsg) - sizeof(algoMsg.type), !IPC_NOWAIT);
+    if (isSent == -1) {
+        perror("ERROR occured during sending the algorithm information to the scheduler\n");
+        exit(-1);
+    }
+
+    // 3. Send each process read at their arrival times
+    struct ProcessMsg processMsg;
+    processMsg.type = 1;     // any type
+
+    for (int i = 0; i < numOfProcesses; ++i) {
+        while (getClk() < processes[i].arrivalTime);
+
+        processMsg.process = processes[i];
+        int isSent = msgsnd(msgQueueID, &processMsg, sizeof(processMsg) - sizeof(processMsg.type), !IPC_NOWAIT);
+        if (isSent == -1) {
+            perror("ERROR occured during sending the process information to the scheduler\n");
+            exit(-1);
+        }
+    }
 
     destroyClk(true);
 }
@@ -72,4 +124,7 @@ int main(int argc, char * argv[])
 void clearResources(int signum)
 {
     //TODO Clears all resources in case of interruption
+    msgctl(msgQueueID, IPC_RMID, NULL);
+    exit(0);
+    
 }
