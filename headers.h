@@ -30,7 +30,7 @@ struct Process {
     int arrivalTime;
     int priority;
     int runningTime;
-    // Add any process-related data 
+    // @hazemtarekelaswad: TODO Add any process-related data 
 };
 
 

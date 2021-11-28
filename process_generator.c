@@ -12,7 +12,6 @@ struct ProcessMsg {
     long type;
     struct Process process;
 };
-// =================================================================================
 
 // Functions =====================================================================
 void clearResources(int);
@@ -20,12 +19,11 @@ void clearResources(int);
 // Returns: -1 if error occured, 
 // Returns: the number of processes in the read file if no errors
 int readFile(char* fileName, struct Process** processes);
-// =================================================================================
 
 // Global variabes and macros =====================================================
 int msgQueueID;
-// =================================================================================
 
+// ================================================================================
 int main(int argc, char * argv[])
 {
     signal(SIGINT, clearResources);
@@ -111,7 +109,7 @@ int main(int argc, char * argv[])
     processMsg.type = 1;     // any type
 
     for (int i = 0; i < numOfProcesses; ++i) {
-        while (getClk() < processes[i].arrivalTime);
+        while (getClk() < processes[i].arrivalTime);  // Wait till the arrival time of any process is raised
 
         processMsg.process = processes[i];
         int isSent = msgsnd(msgQueueID, &processMsg, sizeof(processMsg) - sizeof(processMsg.type), !IPC_NOWAIT);
@@ -121,9 +119,12 @@ int main(int argc, char * argv[])
         }
     }
 
+
+
     destroyClk(true);
 }
 
+// ================================= Function Definitions ============================================
 void clearResources(int signum)
 {
     //TODO Clears all resources in case of interruption
@@ -131,8 +132,6 @@ void clearResources(int signum)
     exit(0);
     
 }
-
-
 
 int readFile(char* fileName, struct Process** processes) {
 
