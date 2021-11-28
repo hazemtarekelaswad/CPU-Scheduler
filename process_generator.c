@@ -1,9 +1,7 @@
 #include "headers.h"
 #include "DSs/PriQueue.h"
 
-void clearResources(int);
-
-
+// Structs ====================================
 struct AlgorithmMsg {
     long type;
     int chosenAlgo;
@@ -14,57 +12,19 @@ struct ProcessMsg {
     long type;
     struct Process process;
 };
+// =================================================================================
+
+// Functions =====================================================================
+void clearResources(int);
 
 // Returns: -1 if error occured, 
 // Returns: the number of processes in the read file if no errors
-int readFile(char* fileName, struct Process** processes) {
+int readFile(char* fileName, struct Process** processes);
+// =================================================================================
 
-    FILE* inputFile = fopen(fileName, "r");		//open the file
-    if (inputFile == NULL) {                    //can't open the file
-        printf("ERROR! Could not open file %s\n", fileName);
-        return -1;  // ERROR occured
-    }
-
-	int num;
-	int rows = 0, cols = 0;
-
-    // Calculate the number of processes
-	fseek(inputFile, 30, SEEK_SET);
-    while (fscanf(inputFile, "%d", &num) != EOF) {
-        cols = (cols + 1) % 4;
-        if (cols == 0) ++rows; 
-    }
-    int numOfProcesses = rows;
-
-    *processes = (struct Process*)malloc(sizeof(struct Process) * numOfProcesses);
-    
-    // Fill the array of processes with the read data from the input file 
-    rows = 0, cols = 0;
-	fseek(inputFile, 30, SEEK_SET);
-
-    while (fscanf(inputFile, "%d", &num) != EOF) {
-        switch (cols) {
-        case 0:
-            (*processes)[rows].id = num;
-            break;
-        case 1:
-            (*processes)[rows].arrivalTime = num;
-            break;
-        case 2:
-            (*processes)[rows].priority = num;
-            break;
-        case 3:
-            (*processes)[rows].runningTime = num;
-            break;
-        }
-        cols = (cols + 1) % 4;
-        if (cols == 0) ++rows; 
-    }
-
-    fclose(inputFile);
-    return numOfProcesses;
-}
+// Global variabes and macros =====================================================
 int msgQueueID;
+// =================================================================================
 
 int main(int argc, char * argv[])
 {
@@ -75,8 +35,7 @@ int main(int argc, char * argv[])
         exit(-1);
     }
 
-    // @husseinAhmed10: reads an input file specified as cmd argument and put it in processes.
-    
+    // read an input file specified as cmd argument and put it in processes.
     struct Process* processes;  //! array of processes, DON'T forget to DELETE it later
     int numOfProcesses = readFile(argv[1], &processes); // returns the number of processes created
 
@@ -129,11 +88,6 @@ int main(int argc, char * argv[])
 
     // If you are the (process_generator)
     initClk();
-    
-    // TODO Generation Main Loop
-    // 5. Create a data structure for processes and provide it with its parameters.
-    // 6. Send the information to the scheduler at the appropriate time.
-    // 7. Clear clock resources
 
     // 1. Create msg queue
     system("touch Keys/gen_scheduler_msgQ");
@@ -176,4 +130,54 @@ void clearResources(int signum)
     msgctl(msgQueueID, IPC_RMID, NULL);
     exit(0);
     
+}
+
+
+
+int readFile(char* fileName, struct Process** processes) {
+
+    FILE* inputFile = fopen(fileName, "r");		//open the file
+    if (inputFile == NULL) {                    //can't open the file
+        printf("ERROR! Could not open file %s\n", fileName);
+        return -1;  // ERROR occured
+    }
+
+	int num;
+	int rows = 0, cols = 0;
+
+    // Calculate the number of processes
+	fseek(inputFile, 30, SEEK_SET);
+    while (fscanf(inputFile, "%d", &num) != EOF) {
+        cols = (cols + 1) % 4;
+        if (cols == 0) ++rows; 
+    }
+    int numOfProcesses = rows;
+
+    *processes = (struct Process*)malloc(sizeof(struct Process) * numOfProcesses);
+    
+    // Fill the array of processes with the read data from the input file 
+    rows = 0, cols = 0;
+	fseek(inputFile, 30, SEEK_SET);
+
+    while (fscanf(inputFile, "%d", &num) != EOF) {
+        switch (cols) {
+        case 0:
+            (*processes)[rows].id = num;
+            break;
+        case 1:
+            (*processes)[rows].arrivalTime = num;
+            break;
+        case 2:
+            (*processes)[rows].priority = num;
+            break;
+        case 3:
+            (*processes)[rows].runningTime = num;
+            break;
+        }
+        cols = (cols + 1) % 4;
+        if (cols == 0) ++rows; 
+    }
+
+    fclose(inputFile);
+    return numOfProcesses;
 }
