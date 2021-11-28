@@ -15,6 +15,55 @@ struct ProcessMsg {
     struct Process process;
 };
 
+// Returns: -1 if error occured, 
+// Returns: the number of processes in the read file if no errors
+int readFile(char* fileName, struct Process** processes) {
+
+    FILE* inputFile = fopen(fileName, "r");		//open the file
+    if (inputFile == NULL) {                    //can't open the file
+        printf("ERROR! Could not open file %s\n", fileName);
+        return -1;  // ERROR occured
+    }
+
+	int num;
+	int rows = 0, cols = 0;
+
+    // Calculate the number of processes
+	fseek(inputFile, 30, SEEK_SET);
+    while (fscanf(inputFile, "%d", &num) != EOF) {
+        cols = (cols + 1) % 4;
+        if (cols == 0) ++rows; 
+    }
+    int numOfProcesses = rows;
+
+    *processes = (struct Process*)malloc(sizeof(struct Process) * numOfProcesses);
+    
+    // Fill the array of processes with the read data from the input file 
+    rows = 0, cols = 0;
+	fseek(inputFile, 30, SEEK_SET);
+
+    while (fscanf(inputFile, "%d", &num) != EOF) {
+        switch (cols) {
+        case 0:
+            (*processes)[rows].id = num;
+            break;
+        case 1:
+            (*processes)[rows].arrivalTime = num;
+            break;
+        case 2:
+            (*processes)[rows].priority = num;
+            break;
+        case 3:
+            (*processes)[rows].runningTime = num;
+            break;
+        }
+        cols = (cols + 1) % 4;
+        if (cols == 0) ++rows; 
+    }
+
+    fclose(inputFile);
+    return numOfProcesses;
+}
 int msgQueueID;
 
 int main(int argc, char * argv[])
