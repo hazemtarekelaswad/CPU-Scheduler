@@ -14,7 +14,8 @@ struct ProcessMsg {
 };
 
 // Functions =====================================================================
-void clearResources(int);
+void clearResources(int signum);
+void sigalrmHandler(int signum);
 
 // Returns: -1 if error occured, 
 // Returns: the number of processes in the read file if no errors
@@ -108,8 +109,24 @@ int main(int argc, char * argv[])
     struct ProcessMsg processMsg;
     processMsg.type = 1;     // any type
 
+    printf("processes: %d\n", numOfProcesses);
+
+    signal(SIGALRM, sigalrmHandler);
     for (int i = 0; i < numOfProcesses; ++i) {
-        while (getClk() < processes[i].arrivalTime);  // Wait till the arrival time of any process is raised
+
+        
+        // alarm(processes[i].arrivalTime - (i != 0) * processes[i - 1].arrivalTime);
+        // raise(S);
+
+        // processMsg.process = processes[i];
+        // int isSent = msgsnd(msgQueueID, &processMsg, sizeof(processMsg) - sizeof(processMsg.type), !IPC_NOWAIT);
+        // if (isSent == -1) {
+        //     perror("ERROR occured during sending the process information to the scheduler\n");
+        //     exit(-1);
+        // }
+
+        while (getClk() < processes[i].arrivalTime);
+            // printf("%d\n", getClk());  // Wait till the arrival time of any process is raised
 
         processMsg.process = processes[i];
         int isSent = msgsnd(msgQueueID, &processMsg, sizeof(processMsg) - sizeof(processMsg.type), !IPC_NOWAIT);
@@ -119,7 +136,7 @@ int main(int argc, char * argv[])
         }
     }
 
-
+    free(processes);
 
     destroyClk(true);
 }
@@ -133,6 +150,10 @@ void clearResources(int signum)
     
 }
 
+void sigalrmHandler(int signum) {
+    raise(SIGCONT);
+}
+
 int readFile(char* fileName, struct Process** processes) {
 
     FILE* inputFile = fopen(fileName, "r");		//open the file
@@ -140,12 +161,11 @@ int readFile(char* fileName, struct Process** processes) {
         printf("ERROR! Could not open file %s\n", fileName);
         return -1;  // ERROR occured
     }
-
 	int num;
 	int rows = 0, cols = 0;
 
     // Calculate the number of processes
-	fseek(inputFile, 30, SEEK_SET);
+	fseek(inputFile, 29, SEEK_SET);
     while (fscanf(inputFile, "%d", &num) != EOF) {
         cols = (cols + 1) % 4;
         if (cols == 0) ++rows; 
@@ -156,7 +176,7 @@ int readFile(char* fileName, struct Process** processes) {
     
     // Fill the array of processes with the read data from the input file 
     rows = 0, cols = 0;
-	fseek(inputFile, 30, SEEK_SET);
+	fseek(inputFile, 29, SEEK_SET);
 
     while (fscanf(inputFile, "%d", &num) != EOF) {
         switch (cols) {
@@ -178,5 +198,14 @@ int readFile(char* fileName, struct Process** processes) {
     }
 
     fclose(inputFile);
+    
+    // for (int i = 0; i < numOfProcesses; ++i)
+    //     printf("%d %d %d %d\n", 
+    //         (*processes)[i].id, 
+    //         (*processes)[i].arrivalTime, 
+    //         (*processes)[i].priority, 
+    //         (*processes)[i].runningTime
+    //     );
+
     return numOfProcesses;
 }
