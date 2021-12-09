@@ -7,6 +7,7 @@ struct AlgorithmMsg {
     long type;
     int chosenAlgo;
     int parameter;
+    int numOfProcesses;
 };
 
 struct ProcessMsg {
@@ -49,15 +50,15 @@ int main(int argc, char * argv[])
     switch(algoMsg.chosenAlgo) {
     case 1:
         // HPF
-        HPF();
+        HPF(algoMsg.numOfProcesses);
         break;
     case 2:
         // SRTN
-        SRTN();
+        SRTN(algoMsg.numOfProcesses);
         break;
     case 3:
         // RR
-        RR(algoMsg.parameter);
+        RR(algoMsg.numOfProcesses, algoMsg.parameter);
         break;
     default:
         perror("ERROR! Invalid choice number\n");
@@ -72,9 +73,12 @@ int main(int argc, char * argv[])
     // destroyClk(true);
 }
 
-void HPF() {
+void HPF(int numOfProcesses) {
     
-    bool isRunning = false;
+    bool isInitial = true;      // Flag: to control if it is the first iteration in the loop or not
+    bool isFinished = false;    // Flag: to check if is the last process or not
+    struct Process* processToRun;
+    int startTime;
 
     // Construct a priority queue
     struct PriQueue* hpfQueue = pqConstruct();
@@ -83,11 +87,11 @@ void HPF() {
     while (1) {
 
          // Receive process info from the generator once arrived
-        int isReceived = msgrcv(msgQueueID, &processMsg, sizeof(processMsg) - sizeof(processMsg.type), 0, !IPC_NOWAIT);
-        if (isReceived == -1) {
-            perror("ERROR occured during receiving the process information from the generator\n");
-            exit(-1);
-        }
+        int isReceived = msgrcv(msgQueueID, &processMsg, sizeof(processMsg) - sizeof(processMsg.type), 0, IPC_NOWAIT);
+        // if (isReceived == -1) {
+        //     perror("ERROR occured during receiving the process information from the generator\n");
+        //     exit(-1);
+        // }
         printf("ID: %d    Arriaval: %d    Pri: %d    RunningTime: %d\n", 
             processMsg.process.id, 
             processMsg.process.arrivalTime, 
@@ -95,10 +99,26 @@ void HPF() {
             processMsg.process.runningTime
         );  // FOR DEBUGGING
 
-        pqEnqueue(hpfQueue, &processMsg.process, processMsg.process.priority);
 
-        
-        struct Process* processToRun = pqFront(hpfQueue);
+        if (isReceived != -1) {     // If received new process info, enqueue it
+            pqEnqueue(hpfQueue, &processMsg.process, processMsg.process.priority);
+        }
+
+
+        if (!isInitial && startTime + processToRun->runningTime > getClk()) {
+            continue;
+        }
+
+        if (isFinished)
+            break;
+
+        if (pqIsEmpty(hpfQueue))
+            continue;
+
+        processToRun = pqDequeue(hpfQueue);
+        --numOfProcesses;
+        if (numOfProcesses == 0)
+            isFinished = true;
         
         // Fork the arrived process
         int generatedPid = fork();
@@ -107,31 +127,16 @@ void HPF() {
             exit(-1);
         }
 
-        int prevClk = getClk();
-
         if (generatedPid == 0) {
             // Convert the remaining time to string and pass it as a process argument 
             char remainingTimeString[(int)1e5];
             sprintf(remainingTimeString, "%d", processMsg.process.remainingTime);
             execl("process.out", "process.out", remainingTimeString, NULL);
         }
-        processMsg.process.pid = generatedPid;   
-
-    
-            
-
+        processToRun->pid = generatedPid;   
+        startTime = getClk();
         
-        // Stop it
-        kill(processMsg.process.pid, SIGTSTP);
-        // Push it in the queue
-
-        if (prevClk + processToRun->runningTime == getClk()) {
-            pqDequeue(hpfQueue);
-            processToRun = pqFront(hpfQueue);
-            kill(processToRun->pid, SIGCONT);
-        }
-        
-
+        isInitial = false;
     }
 
     // Destruct the priority queue
