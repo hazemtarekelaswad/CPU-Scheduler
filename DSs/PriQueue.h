@@ -1,4 +1,4 @@
-/* 
+/*
     This priority queue assumes that the lower the priority value, 
     the highest priority it is. the lower values are at the front of
     queue.
@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef int valueType; // modifiable according to the value type you want
+typedef struct Process* valueType; // modifiable according to the value type you want
 
 struct PriNode {
     int priority;
@@ -45,7 +45,7 @@ bool pqIsEmpty(struct PriQueue* priQueue) {
 
 valueType pqFront(struct PriQueue* priQueue) {
     if (pqIsEmpty(priQueue)) 
-        return -1;   // Assuming all values are non-negatives
+        return NULL;   // Assuming all values are non-negatives
     return priQueue->front->value;
 }
 
@@ -79,15 +79,16 @@ void pqEnqueue(struct PriQueue* priQueue, valueType value, int priority) {
     newNode = NULL;
 }
 
-bool pqDequeue(struct PriQueue* priQueue) {
+valueType pqDequeue(struct PriQueue* priQueue) {
     if (pqIsEmpty(priQueue))
-        return false;
+        return NULL;
     struct PriNode* temp = priQueue->front;
     priQueue->front = priQueue->front->next;
+    valueType value = temp->value; 
     free(temp);
     if (priQueue->front == NULL)
         priQueue->back = NULL;
-    return true; 
+    return value; 
 }
 
 void pqDestruct(struct PriQueue* priQueue) {

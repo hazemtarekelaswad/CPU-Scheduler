@@ -30,9 +30,12 @@ struct Process {
     int arrivalTime;
     int priority;
     int runningTime;
-    // @hazemtarekelaswad: TODO Add any process-related data 
     int remainingTime;
+    int waitingTime;
     int finishTime;
+    enum Status { READY, RUNNING, BLOCKED } status;  //? Can be modified
+    // long pid;
+    // TODO Add any process-related data 
 };
 
 

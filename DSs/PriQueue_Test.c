@@ -17,6 +17,15 @@ int main () {
     pqPrint(priQueue), puts("");
     pqEnqueue(priQueue, 91, 6);
     pqPrint(priQueue), puts("");
+
+    printf("%d\n", pqDequeue(priQueue));
+    pqPrint(priQueue), puts("");
+
+    printf("%d\n", pqDequeue(priQueue));
+    pqPrint(priQueue), puts("");
+
+    printf("%d\n", pqDequeue(priQueue));
+    pqPrint(priQueue), puts("");
     
     pqDestruct(priQueue);
     return 0;
