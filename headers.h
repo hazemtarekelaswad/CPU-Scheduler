@@ -31,6 +31,8 @@ struct Process {
     int priority;
     int runningTime;
     // @hazemtarekelaswad: TODO Add any process-related data 
+    int remainingTime;
+    int finishTime;
 };
 
 
