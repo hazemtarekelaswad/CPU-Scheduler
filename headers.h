@@ -24,16 +24,18 @@ typedef short bool;
 
 #define SHKEY 300
 
+enum Status { NOT_ARRIVED, READY, RUNNING };
 // Process struct
 struct Process {
     int id;
+    int pid;
     int arrivalTime;
     int priority;
     int runningTime;
     int remainingTime;
     int waitingTime;
     int finishTime;
-    enum Status { READY, RUNNING, BLOCKED } status;  //? Can be modified
+    enum Status status;  //? Can be modified
     // long pid;
     // TODO Add any process-related data 
 };

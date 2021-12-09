@@ -128,6 +128,10 @@ int main(int argc, char * argv[])
         while (getClk() < processes[i].arrivalTime);
             // printf("%d\n", getClk());  // Wait till the arrival time of any process is raised
 
+        processes[i].remainingTime = processes[i].runningTime;
+        processes[i].waitingTime = 0;
+        processes[i].finishTime = 0;
+        processes[i].status = NOT_ARRIVED;
         processMsg.process = processes[i];
         int isSent = msgsnd(msgQueueID, &processMsg, sizeof(processMsg) - sizeof(processMsg.type), !IPC_NOWAIT);
         if (isSent == -1) {
