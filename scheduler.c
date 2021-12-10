@@ -54,14 +54,14 @@ int main(int argc, char * argv[])
     printf("Chosen Algo: %d\n", algoMsg.chosenAlgo);    // FOR DEBUGGING
     
     // Msg queue for receiving the process Finish Time
-    system("touch Keys/scheduler_process_msgQ");
-    int fileKeyProcess = ftok("Keys/scheduler_process_msgQ", 'B');
+    // system("touch Keys/scheduler_process_msgQ");
+    // int fileKeyProcess = ftok("Keys/scheduler_process_msgQ", 'B');
 
-    msgQueueProcessID = msgget(fileKeyProcess, 0666 | IPC_CREAT);
-    if (msgQueueProcessID == -1) {
-        perror("ERROR occured during getting the msg queue from the process to scheduler\n");
-        exit(-1);
-    }
+    // msgQueueProcessID = msgget(fileKeyProcess, 0666 | IPC_CREAT);
+    // if (msgQueueProcessID == -1) {
+    //     perror("ERROR occured during getting the msg queue from the process to scheduler\n");
+    //     exit(-1);
+    // }
 
     switch(algoMsg.chosenAlgo) {
     case 1:
@@ -85,7 +85,8 @@ int main(int argc, char * argv[])
     
     // //upon termination release the clock resources
     
-    // destroyClk(true);
+    destroyClk(true);
+    exit(0);
 }
 
 void HPF(int numOfProcesses) {
@@ -104,33 +105,53 @@ void HPF(int numOfProcesses) {
 
          // Receive process info from the generator once arrived
         int isReceived = msgrcv(msgQueueID, &processMsg, sizeof(processMsg) - sizeof(processMsg.type), 0, IPC_NOWAIT);
-        // if (isReceived == -1) {
-        //     perror("ERROR occured during receiving the process information from the generator\n");
-        //     exit(-1);
-        // }
 
         if (isReceived != -1) {     // If received new process info, enqueue it
-            printf("ARRIVED | CLK: %d     ID: %d    Arriaval: %d    RunningTime: %d    Pri: %d\n", 
-                getClk(),
-                processMsg.process.id, 
-                processMsg.process.arrivalTime, 
-                processMsg.process.runningTime,
-                processMsg.process.priority
-            );  // FOR DEBUGGING
+            // printf("ARRIVED | CLK: %d     ID: %d    Arriaval: %d    RunningTime: %d    Pri: %d\n", 
+            //     getClk(),
+            //     processMsg.process.id, 
+            //     processMsg.process.arrivalTime, 
+            //     processMsg.process.runningTime,
+            //     processMsg.process.priority
+            // );  // FOR DEBUGGING
 
             pqEnqueue(hpfQueue, &processMsg.process, processMsg.process.priority);
         }
-
 
         if (!isInitial && startTime + processToRun->runningTime > getClk()) {
             continue;
         }
 
-        int ReceivedFinishTime = msgrcv(msgQueueProcessID, &termMsg, sizeof(termMsg) - sizeof(termMsg.type), 0, IPC_NOWAIT);
-        if (ReceivedFinishTime != -1) { // if received     
-            processToRun->finishTime = termMsg.finishTime;
 
+            // Wait for the processToRun to be terminated with NO HANG
+        if (!isInitial) {
+            //* NOTE: The finish time returned from the process as an exit code
+            int status;
+            int child_pid = waitpid(processToRun->pid, &status, WNOHANG);
+            // if (!WIFEXITED(status))
+            //     perror("ERROR in process termination\n");
+            // else {
+                printf("CLK: %d     Process with PID: %d is terminated successfully with Finish Time: %d\n", getClk(), child_pid, WEXITSTATUS(status));
+                processToRun->finishTime = WEXITSTATUS(status);
+            // }
+    
+            // printf("FINISHED | CLK: %d     ID: %d    Arriaval: %d    RunningTime: %d    Pri: %d  Finish Time: %d\n", 
+            //     getClk(),
+            //     processToRun->id, 
+            //     processToRun->arrivalTime, 
+            //     processToRun->runningTime,
+            //     processToRun->priority,
+            //     processToRun->finishTime
+            // );  // FOR DEBUGGING
+    
         }
+
+
+        // int ReceivedFinishTime = msgrcv(msgQueueProcessID, &termMsg, sizeof(termMsg) - sizeof(termMsg.type), 0, IPC_NOWAIT);
+        // if (ReceivedFinishTime != -1) { // if received     
+        //     processToRun->finishTime = termMsg.finishTime;
+
+        // }
 
 
         if (isFinished)
@@ -141,14 +162,13 @@ void HPF(int numOfProcesses) {
 
         processToRun = pqDequeue(hpfQueue);
 
-            printf("FINISHED | CLK: %d     ID: %d    Arriaval: %d    RunningTime: %d    Pri: %d     FinishTime: %d\n", 
-                getClk(),
-                processToRun->id, 
-                processToRun->arrivalTime, 
-                processToRun->runningTime,
-                processToRun->priority,
-                processToRun->finishTime
-            );  // FOR DEBUGGING
+        // printf("STARTED | CLK: %d     ID: %d    Arriaval: %d    RunningTime: %d    Pri: %d\n", 
+        //     getClk(),
+        //     processToRun->id, 
+        //     processToRun->arrivalTime, 
+        //     processToRun->runningTime,
+        //     processToRun->priority
+        // );  // FOR DEBUGGING
 
 
         --numOfProcesses;

@@ -36,7 +36,7 @@ int main(int argc, char * argv[])
     scanf("%s", filePath); 
     // read an input file specified and put it in processes.
     struct Process* processes;  //! array of processes, DON'T forget to DELETE it later
-    int numOfProcesses = readFile("testProcesses.txt", &processes); // returns the number of processes created
+    int numOfProcesses = readFile("testProcesses2.txt", &processes); // returns the number of processes created
     if (numOfProcesses == -1)
         exit(-1);
     // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.
@@ -88,7 +88,6 @@ int main(int argc, char * argv[])
 
     // If you are the (process_generator)
     initClk();
-
     // 1. Create msg queue
     system("touch Keys/gen_scheduler_msgQ");
     int fileKey = ftok("Keys/gen_scheduler_msgQ", 'A');
@@ -141,9 +140,20 @@ int main(int argc, char * argv[])
         }
     }
 
+    // Wait for the scheduler and the clock to terminate
+    //* NOTE: Scheduler is resposible for destroying the clock
+    int status;
+    int child_pid = wait(&status);
+    if (!WIFEXITED(status))
+        perror("ERROR in generator's children termination\n");
+    else
+        printf("Process with PID: %d is terminated successfully with exit code: %d\n", child_pid, WEXITSTATUS(status));
+    
+    
     free(processes);
 
-    destroyClk(true);
+    destroyClk(false);
+    return 0;
 }
 
 // ================================= Function Definitions ============================================
