@@ -6,6 +6,7 @@ struct AlgorithmMsg {
     long type;
     int chosenAlgo;
     int parameter;
+    int numOfProcesses;
 };
 
 struct ProcessMsg {
@@ -52,6 +53,7 @@ int main(int argc, char * argv[])
     struct AlgorithmMsg algoMsg;
     algoMsg.type = 1;   // any type
     algoMsg.chosenAlgo = chosenAlgo;
+    algoMsg.numOfProcesses = numOfProcesses;
 
     switch(chosenAlgo) {
     case 1:

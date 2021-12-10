@@ -15,13 +15,19 @@ struct ProcessMsg {
     struct Process process;
 };
 
+struct TerminationMsg {
+    long type;
+    int finishTime;
+};
+
 // Functions =====================================================================
-void HPF();
-void SRTN();
-void RR(int quantum);
+void HPF(int numOfProcesses);
+void SRTN(int numOfProcesses);
+void RR(int numOfProcesses, int quantum);
 
 // Global variabes and macros =====================================================
 int msgQueueID;
+int msgQueueProcessID;
 
 int main(int argc, char * argv[])
 {
@@ -47,6 +53,16 @@ int main(int argc, char * argv[])
     }
     printf("Chosen Algo: %d\n", algoMsg.chosenAlgo);    // FOR DEBUGGING
     
+    // Msg queue for receiving the process Finish Time
+    system("touch Keys/scheduler_process_msgQ");
+    int fileKeyProcess = ftok("Keys/scheduler_process_msgQ", 'B');
+
+    msgQueueProcessID = msgget(fileKeyProcess, 0666 | IPC_CREAT);
+    if (msgQueueProcessID == -1) {
+        perror("ERROR occured during getting the msg queue from the process to scheduler\n");
+        exit(-1);
+    }
+
     switch(algoMsg.chosenAlgo) {
     case 1:
         // HPF
@@ -67,7 +83,6 @@ int main(int argc, char * argv[])
 
 
     
-    // //TODO implement the scheduler :)
     // //upon termination release the clock resources
     
     // destroyClk(true);
@@ -83,6 +98,7 @@ void HPF(int numOfProcesses) {
     // Construct a priority queue
     struct PriQueue* hpfQueue = pqConstruct();
 
+    struct TerminationMsg termMsg;
     struct ProcessMsg processMsg;
     while (1) {
 
@@ -109,6 +125,13 @@ void HPF(int numOfProcesses) {
             continue;
         }
 
+        int ReceivedFinishTime = msgrcv(msgQueueProcessID, &termMsg, sizeof(termMsg) - sizeof(termMsg.type), 0, IPC_NOWAIT);
+        if (ReceivedFinishTime != -1) { // if received     
+            processToRun->finishTime = termMsg.finishTime;
+            printf("Finish time of process: %d\n", processToRun->finishTime);
+        }
+
+
         if (isFinished)
             break;
 
@@ -120,6 +143,10 @@ void HPF(int numOfProcesses) {
         if (numOfProcesses == 0)
             isFinished = true;
         
+        // Convert the remaining time to string and pass it as a process argument 
+        char remainingTimeString[(int)1e5];
+        sprintf(remainingTimeString, "%d", processMsg.process.remainingTime);
+        
         // Fork the arrived process
         int generatedPid = fork();
         if (generatedPid == -1) {
@@ -128,13 +155,10 @@ void HPF(int numOfProcesses) {
         }
 
         if (generatedPid == 0) {
-            // Convert the remaining time to string and pass it as a process argument 
-            char remainingTimeString[(int)1e5];
-            sprintf(remainingTimeString, "%d", processMsg.process.remainingTime);
             execl("process.out", "process.out", remainingTimeString, NULL);
         }
-        processToRun->pid = generatedPid;   
         startTime = getClk();
+        processToRun->pid = generatedPid;   
         
         isInitial = false;
     }
@@ -143,10 +167,10 @@ void HPF(int numOfProcesses) {
     pqDestruct(hpfQueue);
 }
 
-void SRTN() {
+void SRTN(int numOfProcesses) {
 
 }
 
-void RR(int quantum) {
+void RR(int numOfProcesses, int quantum) {
 
 }
