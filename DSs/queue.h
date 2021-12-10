@@ -18,14 +18,14 @@
 
 typedef struct Process* qValueType; // modifiable according to the value type you want
 
-struct Node {
+struct qNode {
     qValueType value;
-    struct Node* next;
+    struct qNode* next;
 };
 
 struct Queue {
-    struct Node* back;
-    struct Node* front;
+    struct qNode* back;
+    struct qNode* front;
 };
 
 struct Queue* qConstruct() {
@@ -45,7 +45,7 @@ qValueType qFront(struct Queue* queue) {
 }
 
 void qEnqueue(struct Queue* queue, qValueType value) {
-    struct Node* newNode = (struct Node*)malloc(sizeof(struct Node));
+    struct qNode* newNode = (struct qNode*)malloc(sizeof(struct qNode));
     newNode->value = value;
     newNode->next = NULL;
 
@@ -61,7 +61,7 @@ void qEnqueue(struct Queue* queue, qValueType value) {
 qValueType qDequeue(struct Queue* queue) {
     if (qIsEmpty(queue))
         return NULL;
-    struct Node* temp = queue->front;
+    struct qNode* temp = queue->front;
     queue->front = queue->front->next;
     qValueType value = temp->value;
     free(temp);
@@ -78,7 +78,7 @@ void qDestruct(struct Queue* queue) {
 }
 
 // void qPrint(struct Queue* queue) {
-//     struct Node* trav = queue->front;
+//     struct qNode* trav = queue->front;
 //     while (trav) {
 //         printf("%d ", trav->value);
 //         trav = trav->next;
