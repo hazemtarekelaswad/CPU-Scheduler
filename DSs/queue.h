@@ -16,10 +16,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef int valueType; // modifiable according to the value type you want
+typedef int qValueType; // modifiable according to the value type you want
 
 struct Node {
-    valueType value;
+    qValueType value;
     struct Node* next;
 };
 
@@ -38,13 +38,13 @@ bool qIsEmpty(struct Queue* queue) {
     return (queue->back == NULL && queue->front == NULL);
 }
 
-valueType qFront(struct Queue* queue) {
+qValueType qFront(struct Queue* queue) {
     if (qIsEmpty(queue)) 
         return -1;   // Assuming all values are non-negatives
     return queue->front->value;
 }
 
-void qEnqueue(struct Queue* queue, valueType value) {
+void qEnqueue(struct Queue* queue, qValueType value) {
     struct Node* newNode = (struct Node*)malloc(sizeof(struct Node));
     newNode->value = value;
     newNode->next = NULL;

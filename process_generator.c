@@ -29,17 +29,16 @@ int msgQueueID;
 int main(int argc, char * argv[])
 {
     signal(SIGINT, clearResources);
+
     // 1. Read the input files.
-    if (argc != 2) {
-        perror("ERROR! Not enough arguments\n");
-        exit(-1);
-    }
-
-    // read an input file specified as cmd argument and put it in processes.
+    char filePath[100];
+    printf("Enter the input file path: ");
+    scanf("%s", filePath); 
+    // read an input file specified and put it in processes.
     struct Process* processes;  //! array of processes, DON'T forget to DELETE it later
-    int numOfProcesses = readFile(argv[1], &processes); // returns the number of processes created
-
-
+    int numOfProcesses = readFile("testProcesses.txt", &processes); // returns the number of processes created
+    if (numOfProcesses == -1)
+        exit(-1);
     // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.
     puts("Choose one of the following scheduling algorithms: ");
     puts("1. Non-preemptive Highest Priority First (HPF)");
@@ -111,7 +110,7 @@ int main(int argc, char * argv[])
     struct ProcessMsg processMsg;
     processMsg.type = 1;     // any type
 
-    printf("processes: %d\n", numOfProcesses);
+    printf("Number of processes: %d\n", numOfProcesses);
 
     signal(SIGALRM, sigalrmHandler);
     for (int i = 0; i < numOfProcesses; ++i) {
@@ -193,10 +192,10 @@ int readFile(char* fileName, struct Process** processes) {
             (*processes)[rows].arrivalTime = num;
             break;
         case 2:
-            (*processes)[rows].priority = num;
+            (*processes)[rows].runningTime = num;
             break;
         case 3:
-            (*processes)[rows].runningTime = num;
+            (*processes)[rows].priority = num;
             break;
         }
         cols = (cols + 1) % 4;

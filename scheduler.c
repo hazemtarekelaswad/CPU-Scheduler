@@ -1,6 +1,6 @@
 #include "headers.h"
 #include "DSs/PriQueue.h"
-#include "DSs/Queue.h"
+#include "DSs/queue.h"
 
 // Structs ====================================
 struct AlgorithmMsg {
@@ -108,15 +108,16 @@ void HPF(int numOfProcesses) {
         //     perror("ERROR occured during receiving the process information from the generator\n");
         //     exit(-1);
         // }
-        printf("ID: %d    Arriaval: %d    Pri: %d    RunningTime: %d\n", 
-            processMsg.process.id, 
-            processMsg.process.arrivalTime, 
-            processMsg.process.priority,
-            processMsg.process.runningTime
-        );  // FOR DEBUGGING
-
 
         if (isReceived != -1) {     // If received new process info, enqueue it
+            printf("ARRIVED | CLK: %d     ID: %d    Arriaval: %d    RunningTime: %d    Pri: %d\n", 
+                getClk(),
+                processMsg.process.id, 
+                processMsg.process.arrivalTime, 
+                processMsg.process.runningTime,
+                processMsg.process.priority
+            );  // FOR DEBUGGING
+
             pqEnqueue(hpfQueue, &processMsg.process, processMsg.process.priority);
         }
 
@@ -128,7 +129,7 @@ void HPF(int numOfProcesses) {
         int ReceivedFinishTime = msgrcv(msgQueueProcessID, &termMsg, sizeof(termMsg) - sizeof(termMsg.type), 0, IPC_NOWAIT);
         if (ReceivedFinishTime != -1) { // if received     
             processToRun->finishTime = termMsg.finishTime;
-            printf("Finish time of process: %d\n", processToRun->finishTime);
+
         }
 
 
@@ -139,6 +140,17 @@ void HPF(int numOfProcesses) {
             continue;
 
         processToRun = pqDequeue(hpfQueue);
+
+            printf("FINISHED | CLK: %d     ID: %d    Arriaval: %d    RunningTime: %d    Pri: %d     FinishTime: %d\n", 
+                getClk(),
+                processToRun->id, 
+                processToRun->arrivalTime, 
+                processToRun->runningTime,
+                processToRun->priority,
+                processToRun->finishTime
+            );  // FOR DEBUGGING
+
+
         --numOfProcesses;
         if (numOfProcesses == 0)
             isFinished = true;

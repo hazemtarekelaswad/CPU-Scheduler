@@ -20,11 +20,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct Process* valueType; // modifiable according to the value type you want
+typedef struct Process* pqValueType; // modifiable according to the value type you want
 
 struct PriNode {
     int priority;
-    valueType value;
+    pqValueType value;
     struct PriNode* next;
 };
 
@@ -43,13 +43,13 @@ bool pqIsEmpty(struct PriQueue* priQueue) {
     return (priQueue->back == NULL && priQueue->front == NULL);
 }
 
-valueType pqFront(struct PriQueue* priQueue) {
+pqValueType pqFront(struct PriQueue* priQueue) {
     if (pqIsEmpty(priQueue)) 
         return NULL;   // Assuming all values are non-negatives
     return priQueue->front->value;
 }
 
-void pqEnqueue(struct PriQueue* priQueue, valueType value, int priority) {
+void pqEnqueue(struct PriQueue* priQueue, pqValueType value, int priority) {
     struct PriNode* newNode = (struct PriNode*)malloc(sizeof(struct PriNode));
     newNode->value = value;
     newNode->priority = priority;
@@ -79,12 +79,12 @@ void pqEnqueue(struct PriQueue* priQueue, valueType value, int priority) {
     newNode = NULL;
 }
 
-valueType pqDequeue(struct PriQueue* priQueue) {
+pqValueType pqDequeue(struct PriQueue* priQueue) {
     if (pqIsEmpty(priQueue))
         return NULL;
     struct PriNode* temp = priQueue->front;
     priQueue->front = priQueue->front->next;
-    valueType value = temp->value; 
+    pqValueType value = temp->value; 
     free(temp);
     if (priQueue->front == NULL)
         priQueue->back = NULL;
@@ -97,12 +97,12 @@ void pqDestruct(struct PriQueue* priQueue) {
     priQueue = NULL;
 }
 
-void pqPrint(struct PriQueue* priQueue) {
-    struct PriNode* trav = priQueue->front;
-    while (trav) {
-        printf("%d ", trav->value);
-        trav = trav->next;
-    }
-}
+// void pqPrint(struct PriQueue* priQueue) {
+//     struct PriNode* trav = priQueue->front;
+//     while (trav) {
+//         printf("%d ", trav->value);
+//         trav = trav->next;
+//     }
+// }
 
 #endif
