@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef int qValueType; // modifiable according to the value type you want
+typedef struct Process* qValueType; // modifiable according to the value type you want
 
 struct Node {
     qValueType value;
@@ -40,7 +40,7 @@ bool qIsEmpty(struct Queue* queue) {
 
 qValueType qFront(struct Queue* queue) {
     if (qIsEmpty(queue)) 
-        return -1;   // Assuming all values are non-negatives
+        return NULL;   // Assuming all values are non-negatives
     return queue->front->value;
 }
 
@@ -58,15 +58,16 @@ void qEnqueue(struct Queue* queue, qValueType value) {
     newNode = NULL;
 }
 
-bool qDequeue(struct Queue* queue) {
+qValueType qDequeue(struct Queue* queue) {
     if (qIsEmpty(queue))
-        return false;
+        return NULL;
     struct Node* temp = queue->front;
     queue->front = queue->front->next;
+    qValueType value = temp->value;
     free(temp);
     if (queue->front == NULL)
         queue->back = NULL;
-    return true; 
+    return value; 
     
 }
 
@@ -76,12 +77,12 @@ void qDestruct(struct Queue* queue) {
     queue = NULL;
 }
 
-void qPrint(struct Queue* queue) {
-    struct Node* trav = queue->front;
-    while (trav) {
-        printf("%d ", trav->value);
-        trav = trav->next;
-    }
-}
+// void qPrint(struct Queue* queue) {
+//     struct Node* trav = queue->front;
+//     while (trav) {
+//         printf("%d ", trav->value);
+//         trav = trav->next;
+//     }
+// }
 
 #endif
