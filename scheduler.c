@@ -1,6 +1,7 @@
 #include "headers.h"
 #include "DSs/PriQueue.h"
 #include "DSs/queue.h"
+#include "DSs/list.h"
 
 // Structs ====================================
 struct AlgorithmMsg {
@@ -20,7 +21,7 @@ void HPF(int numOfProcesses);
 void SRTN(int numOfProcesses);
 void RR(int numOfProcesses, int quantum);
 
-void TEST();
+void TEST(int numOfProcesses);
 
 // Global variabes and macros =====================================================
 int msgQueueID;
@@ -130,7 +131,7 @@ void TEST(int numOfProcesses) {
     while (1) {
            
         pause();
-        // printf("clk at scheduler %d\n", getClk());
+        printf("clk after pausing %d\n", getClk());
         if (isReceived) {
 
             int receivedStatus = msgrcv(msgQueueID, &processMsg, sizeof(processMsg.process), 0, !IPC_NOWAIT);
@@ -304,5 +305,61 @@ void SRTN(int numOfProcesses) {
 }
 
 void RR(int numOfProcesses, int quantum) {
+    
+    struct Process* processToRun;
+    struct ProcessMsg processMsg;
+    
+    // Construct a list
+    struct List* RRlist = listConstruct();
 
+    while (1) {
+        pause();
+        printf("clk after pausing %d\n", getClk());
+
+        if (isReceived) {
+            int receivedStatus = msgrcv(msgQueueID, &processMsg, sizeof(processMsg.process), 0, !IPC_NOWAIT);
+            listPushBack(RRlist, &processMsg.process);
+            isReceived = false;
+
+            printf("ARRIVED | CLK: %d \t ID: %d \t Arrival: %d\n", 
+                getClk(), 
+                processMsg.process.id,
+                processMsg.process.arrivalTime
+            );
+        }
+        
+        processToRun = listTravValue(RRlist);
+        listAdvanceTrav(RRlist);
+
+        // First time to run this process
+        if (processToRun->remainingTime == processToRun->runningTime) {
+
+            // Convert both the quantum and remaining time to strings
+            char remainingTimeString[(int)1e5];
+            sprintf(remainingTimeString, "%d", processToRun->remainingTime);
+
+            char quantumString[(int)1e5];
+            sprintf(quantumString, "%d", quantum);
+
+            // Fork the process (first time running)
+            int generatedPid = fork();
+            if (generatedPid == -1) {
+                printf("ERROR occured while forking the process with ID: %d\n", processToRun->id);
+                exit(-1);
+            }
+
+            if (generatedPid == 0) {
+                if (processToRun->remainingTime > quantum)
+                    execl("process.out", "process.out", quantumString, NULL);
+                
+                else
+                    execl("process.out", "process.out", remainingTimeString, NULL);
+            }
+        }
+
+        if (getClk() == 
+            
+
+        
+    }
 }

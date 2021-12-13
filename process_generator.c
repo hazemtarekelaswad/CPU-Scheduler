@@ -36,7 +36,7 @@ int main(int argc, char * argv[])
     scanf("%s", filePath); 
     // read an input file specified and put it in processes.
     struct Process* processes;  //! array of processes, DON'T forget to DELETE it later
-    int numOfProcesses = readFile("testProcesses.txt", &processes); // returns the number of processes created
+    int numOfProcesses = readFile("testProcesses2.txt", &processes); // returns the number of processes created
     if (numOfProcesses == -1)
         exit(-1);
     // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.
@@ -115,19 +115,19 @@ int main(int argc, char * argv[])
     struct ProcessMsg processMsg;
     processMsg.type = 1;     // any type
 
-    clock_t start_time = 0;
-    clock_t end_time = 0;
+    int start_time = 0;
+    int end_time = 0;
     for (int i = 0; i < numOfProcesses; ++i) {
-        clock_t delay_duration = end_time - start_time;
+        int delay_duration = end_time - start_time;
         if (i == 0)
-            sleep(processes[i].arrivalTime - delay_duration / CLOCKS_PER_SEC);
+            sleep(processes[i].arrivalTime - delay_duration);
         else
-            sleep(processes[i].arrivalTime - processes[i - 1].arrivalTime - delay_duration / CLOCKS_PER_SEC);
+            sleep(processes[i].arrivalTime - processes[i - 1].arrivalTime - delay_duration);
 
         // printf("CLK: %d ID: %d\n", getClk(), processes[i].id);
         // printf("CLK: %d\n", getClk());     
 
-        start_time = clock();
+        start_time = getClk();
         processes[i].remainingTime = processes[i].runningTime;
         processes[i].waitingTime = 0;
         processes[i].finishTime = 0;
@@ -139,7 +139,7 @@ int main(int argc, char * argv[])
             perror("ERROR occured during sending the process information to the scheduler\n");
             exit(-1);
         }
-        end_time = clock();
+        end_time = getClk();
 
     }
 
