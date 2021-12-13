@@ -19,7 +19,9 @@ int main(int agrc, char * argv[])
     clock_t finishTime = clock();
     // printf("Duration: %ld\n", (finishTime - startTime) / CLOCKS_PER_SEC);
     // printf("FinishTime: %ld\n", finishTime / CLOCKS_PER_SEC);
-
+    // printf("FinishTime: %d\n", simFinishTime);
     destroyClk(false);
     exit(simFinishTime);
+    // exit (finishTime / CLOCKS_PER_SEC);
+    // return 0;
 }

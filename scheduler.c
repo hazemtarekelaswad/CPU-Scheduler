@@ -15,27 +15,38 @@ struct ProcessMsg {
     struct Process process;
 };
 
-struct TerminationMsg {
-    long type;
-    int finishTime;
-};
-
 // Functions =====================================================================
 void HPF(int numOfProcesses);
 void SRTN(int numOfProcesses);
 void RR(int numOfProcesses, int quantum);
 
+void TEST();
+
 // Global variabes and macros =====================================================
 int msgQueueID;
-int msgQueueProcessID;
+
+bool isReceived = false;
+bool isRunning = false;
+
+// SIGUSR1
+void HPFreceiveProcessHandler(int signum) {
+    isReceived = true;
+}
+
+// SIGCHLD
+void HPFprocessTermHandler(int signum) {
+    isRunning = false;
+}
 
 int main(int argc, char * argv[])
 {
 
+    signal(SIGUSR1, HPFreceiveProcessHandler);
+    signal(SIGCHLD, HPFprocessTermHandler);
     initClk();
 
-    system("touch Keys/scheduler_gen_msgQ");
-    int fileKey = ftok("Keys/gen_scheduler_msgQ", 'A');
+    // system("touch Keys/scheduler_gen_msgQ");
+    int fileKey = 41;/*ftok("Keys/gen_scheduler_msgQ", 'A');*/
 
     msgQueueID = msgget(fileKey, 0666 | IPC_CREAT);
     if (msgQueueID == -1) {
@@ -63,10 +74,12 @@ int main(int argc, char * argv[])
     //     exit(-1);
     // }
 
+
     switch(algoMsg.chosenAlgo) {
     case 1:
         // HPF
-        HPF(algoMsg.numOfProcesses);
+        // HPF(algoMsg.numOfProcesses);
+        TEST(algoMsg.numOfProcesses);
         break;
     case 2:
         // SRTN
@@ -85,10 +98,97 @@ int main(int argc, char * argv[])
     
     // //upon termination release the clock resources
     
-    destroyClk(true);
+    destroyClk(false);
     exit(0);
 }
 
+
+
+void TEST(int numOfProcesses) {
+    // struct ProcessMsg processMsg;
+    // while (1) {
+    //     pause();
+    //     if (isReceived) {
+
+    //         int receivedStatus = msgrcv(msgQueueID, &processMsg, sizeof(processMsg) - sizeof(processMsg.type), 0, !IPC_NOWAIT);
+    //         printf("ARRIVED | CLK: %d \t ID: %d \t Arrival: %d\n", 
+    //             getClk(), 
+    //             processMsg.process.id,
+    //             processMsg.process.arrivalTime
+    //         );
+    //     }
+        
+    // }
+    
+    struct Process* processToRun;
+    struct ProcessMsg processMsg;
+    
+    // Construct a priority queue
+    struct PriQueue* hpfQueue = pqConstruct();
+
+    // struct TerminationMsg termMsg;
+    while (1) {
+           
+        pause();
+        // printf("clk at scheduler %d\n", getClk());
+        if (isReceived) {
+
+            int receivedStatus = msgrcv(msgQueueID, &processMsg, sizeof(processMsg.process), 0, !IPC_NOWAIT);
+            pqEnqueue(hpfQueue, &processMsg.process, processMsg.process.priority);
+            isReceived = false;
+            printf("ARRIVED | CLK: %d \t ID: %d \t Arrival: %d\n", 
+                getClk(), 
+                processMsg.process.id,
+                processMsg.process.arrivalTime
+            );
+        }
+        
+        if (isRunning) continue;
+        //   printf("FINISHED | CLK: %d \t PID: %d \t ID: %d \t Arrival: %d \t Running: %d\n", 
+        //         getClk(), 
+        //         processToRun->pid,
+        //         processToRun->id,
+        //         processToRun->arrivalTime,
+        //         processToRun->runningTime
+        //     );
+        
+        if (numOfProcesses == 0) break;
+        if (pqIsEmpty(hpfQueue)) continue;
+
+        // ==== Run the process ====
+        --numOfProcesses;
+
+        processToRun = pqDequeue(hpfQueue);
+
+        printf("STARTED | CLK: %d \t ID: %d \t Arrival: %d \t Running: %d\n", 
+                getClk(), 
+                processToRun->id,
+                processToRun->arrivalTime,
+                processToRun->runningTime
+            );
+
+        isRunning = true;    
+        // Convert the remaining time to string and pass it as a process argument 
+        char remainingTimeString[(int)1e5];
+        sprintf(remainingTimeString, "%d", processToRun->remainingTime);
+        
+        // Fork the arrived process
+        int generatedPid = fork();
+        if (generatedPid == -1) {
+            printf("ERROR occured while forking the process with ID: %d\n", processToRun->id);
+            exit(-1);
+        }
+
+        else if (generatedPid == 0) {
+            execl("process.out", "process.out", remainingTimeString, NULL);
+        }
+        
+
+    }
+
+    // Destruct the priority queue
+    pqDestruct(hpfQueue);
+}
 void HPF(int numOfProcesses) {
     
     bool isInitial = true;      // Flag: to control if it is the first iteration in the loop or not
@@ -99,7 +199,7 @@ void HPF(int numOfProcesses) {
     // Construct a priority queue
     struct PriQueue* hpfQueue = pqConstruct();
 
-    struct TerminationMsg termMsg;
+    // struct TerminationMsg termMsg;
     struct ProcessMsg processMsg;
     while (1) {
 
@@ -177,12 +277,12 @@ void HPF(int numOfProcesses) {
         
         // Convert the remaining time to string and pass it as a process argument 
         char remainingTimeString[(int)1e5];
-        sprintf(remainingTimeString, "%d", processMsg.process.remainingTime);
+        sprintf(remainingTimeString, "%d", processToRun->remainingTime);
         
         // Fork the arrived process
         int generatedPid = fork();
         if (generatedPid == -1) {
-            printf("ERROR occured while forking the process with ID: %d\n", processMsg.process.id);
+            printf("ERROR occured while forking the process with ID: %d\n", processToRun->id);
             exit(-1);
         }
 

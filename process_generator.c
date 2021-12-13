@@ -16,7 +16,6 @@ struct ProcessMsg {
 
 // Functions =====================================================================
 void clearResources(int signum);
-void sigalrmHandler(int signum);
 
 // Returns: -1 if error occured, 
 // Returns: the number of processes in the read file if no errors
@@ -36,7 +35,7 @@ int main(int argc, char * argv[])
     scanf("%s", filePath); 
     // read an input file specified and put it in processes.
     struct Process* processes;  //! array of processes, DON'T forget to DELETE it later
-    int numOfProcesses = readFile("testProcesses2.txt", &processes); // returns the number of processes created
+    int numOfProcesses = readFile("testProcesses.txt", &processes); // returns the number of processes created
     if (numOfProcesses == -1)
         exit(-1);
     // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.
@@ -63,17 +62,23 @@ int main(int argc, char * argv[])
         // SRTN
         algoMsg.parameter = -1; // No parameters
         break;
-    case 3:
+    case 3: {
+
         // RR
-        algoMsg.parameter = 5; // There exist a quantum
+        int RRParameter;
+        printf("Enter the RR Quantum: ");
+        scanf("%d", &RRParameter);
+        algoMsg.parameter = RRParameter; // There exist a quantum
         break;
+    }
     default:
         perror("ERROR! Invalid choice number\n");
         exit(-1);
     }
 
-    // 3. Initiate and create the scheduler and clock processes.
 
+    // Initiate and create the scheduler and the clock processes.
+    int schedulerPID;
     for (int i = 0; i < 2; ++i) {
         int pid = fork();
         if (pid == -1) {
@@ -81,63 +86,56 @@ int main(int argc, char * argv[])
             exit(-1);
         }
         if (i == 0 && pid == 0)
-            execl("clk.out", "clk.out", NULL);
-        else if (i == 1 && pid == 0)
             execl("scheduler.out", "scheduler.out", NULL);
+        else if (i == 1 && pid == 0)
+            execl("clk.out", "clk.out", NULL);
+        if (i == 0 && pid != 0)
+            schedulerPID = pid;
     }
-
-    // If you are the (process_generator)
-    initClk();
-    // 1. Create msg queue
-    system("touch Keys/gen_scheduler_msgQ");
-    int fileKey = ftok("Keys/gen_scheduler_msgQ", 'A');
+    // Create msg queue between process generator and the scheduler
+    // system("touch Keys/gen_scheduler_msgQ");
+    int fileKey = 41;/*ftok("Keys/gen_scheduler_msgQ", 'A');*/
 
     msgQueueID = msgget(fileKey, 0666 | IPC_CREAT);
     if (msgQueueID == -1) {
         perror("ERROR occured during creating the message queue\n");
         exit(-1);
     }
-
-    // 2. Send the algo choise and parameters to the scheduler
+    // If you are the (process_generator)
+    initClk();
+    // Send the algo choice and parameters to the scheduler
     int isSent = msgsnd(msgQueueID, &algoMsg, sizeof(algoMsg) - sizeof(algoMsg.type), !IPC_NOWAIT);
     if (isSent == -1) {
         perror("ERROR occured during sending the algorithm information to the scheduler\n");
         exit(-1);
     }
 
-    // 3. Send each process read at their arrival times
+    // Send each process read at their arrival times
     struct ProcessMsg processMsg;
     processMsg.type = 1;     // any type
 
-    printf("Number of processes: %d\n", numOfProcesses);
-
-    signal(SIGALRM, sigalrmHandler);
     for (int i = 0; i < numOfProcesses; ++i) {
+        if (i == 0)
+            sleep(processes[i].arrivalTime);
+        else
+            sleep(processes[i].arrivalTime - processes[i - 1].arrivalTime);
 
-        
-        // alarm(processes[i].arrivalTime - (i != 0) * processes[i - 1].arrivalTime);
-        // raise(S);
-
-        // processMsg.process = processes[i];
-        // int isSent = msgsnd(msgQueueID, &processMsg, sizeof(processMsg) - sizeof(processMsg.type), !IPC_NOWAIT);
-        // if (isSent == -1) {
-        //     perror("ERROR occured during sending the process information to the scheduler\n");
-        //     exit(-1);
-        // }
-
-        while (getClk() < processes[i].arrivalTime);
-            // printf("%d\n", getClk());  // Wait till the arrival time of any process is raised
-
+        // printf("CLK: %d ID: %d\n", getClk(), processes[i].id);
+        // printf("CLK: %d\n", getClk());        
         processes[i].remainingTime = processes[i].runningTime;
-        processes[i].waitingTime = 0;
-        processes[i].finishTime = 0;
-        processes[i].status = NOT_ARRIVED;
+        // processes[i].waitingTime = 0;
+        // processes[i].finishTime = 0;
+        // processes[i].status = NOT_ARRIVED;
+
         processMsg.process = processes[i];
-        int isSent = msgsnd(msgQueueID, &processMsg, sizeof(processMsg) - sizeof(processMsg.type), !IPC_NOWAIT);
+        kill(schedulerPID, SIGUSR1);
+        int isSent = msgsnd(msgQueueID, &processMsg, sizeof(processMsg.process), !IPC_NOWAIT);
         if (isSent == -1) {
             perror("ERROR occured during sending the process information to the scheduler\n");
             exit(-1);
         }
+        
+
     }
 
     // Wait for the scheduler and the clock to terminate
@@ -152,7 +150,7 @@ int main(int argc, char * argv[])
     
     free(processes);
 
-    destroyClk(false);
+    destroyClk(true);
     return 0;
 }
 
@@ -165,9 +163,6 @@ void clearResources(int signum)
     
 }
 
-void sigalrmHandler(int signum) {
-    raise(SIGCONT);
-}
 
 int readFile(char* fileName, struct Process** processes) {
 
