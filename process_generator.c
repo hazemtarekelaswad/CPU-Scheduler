@@ -1,5 +1,6 @@
 #include "headers.h"
 #include "DSs/PriQueue.h"
+#include <time.h>
 
 // Structs ====================================
 struct AlgorithmMsg {
@@ -114,19 +115,23 @@ int main(int argc, char * argv[])
     struct ProcessMsg processMsg;
     processMsg.type = 1;     // any type
 
+    clock_t start_time = 0;
+    clock_t end_time = 0;
     for (int i = 0; i < numOfProcesses; ++i) {
+        clock_t delay_duration = end_time - start_time;
         if (i == 0)
-            sleep(processes[i].arrivalTime);
+            sleep(processes[i].arrivalTime - delay_duration / CLOCKS_PER_SEC);
         else
-            sleep(processes[i].arrivalTime - processes[i - 1].arrivalTime);
+            sleep(processes[i].arrivalTime - processes[i - 1].arrivalTime - delay_duration / CLOCKS_PER_SEC);
 
         // printf("CLK: %d ID: %d\n", getClk(), processes[i].id);
-        // printf("CLK: %d\n", getClk());        
-        processes[i].remainingTime = processes[i].runningTime;
-        // processes[i].waitingTime = 0;
-        // processes[i].finishTime = 0;
-        // processes[i].status = NOT_ARRIVED;
+        // printf("CLK: %d\n", getClk());     
 
+        start_time = clock();
+        processes[i].remainingTime = processes[i].runningTime;
+        processes[i].waitingTime = 0;
+        processes[i].finishTime = 0;
+        processes[i].status = NOT_ARRIVED;
         processMsg.process = processes[i];
         kill(schedulerPID, SIGUSR1);
         int isSent = msgsnd(msgQueueID, &processMsg, sizeof(processMsg.process), !IPC_NOWAIT);
@@ -134,7 +139,7 @@ int main(int argc, char * argv[])
             perror("ERROR occured during sending the process information to the scheduler\n");
             exit(-1);
         }
-        
+        end_time = clock();
 
     }
 
