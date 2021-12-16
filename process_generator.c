@@ -131,7 +131,7 @@ int main(int argc, char * argv[])
         processes[i].remainingTime = processes[i].runningTime;
         processes[i].waitingTime = 0;
         processes[i].finishTime = 0;
-        processes[i].status = NOT_ARRIVED;
+        // processes[i].status = NOT_ARRIVED;           
         processMsg.process = processes[i];
         kill(schedulerPID, SIGUSR1);
         int isSent = msgsnd(msgQueueID, &processMsg, sizeof(processMsg.process), !IPC_NOWAIT);

@@ -24,7 +24,7 @@ typedef short bool;
 
 #define SHKEY 300
 
-enum Status { NOT_ARRIVED, READY, RUNNING };
+enum Status { STARTED, RESUMED, STOPPED, FINISHED };
 // Process struct
 struct Process {
     int id;

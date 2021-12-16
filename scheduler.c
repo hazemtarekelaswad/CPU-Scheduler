@@ -27,6 +27,7 @@ void TEST(int numOfProcesses);
 int msgQueueID;
 bool isReceived = false;
 bool isRunning = false;
+bool isAlarmed = false;
 
 // SIGUSR1
 void HPFreceiveProcessHandler(int signum) {
@@ -38,11 +39,17 @@ void HPFprocessTermHandler(int signum) {
     isRunning = false;
 }
 
+//SIGALRM
+void RRalarmHandler(int signum) {
+    isAlarmed = false;
+}
+
 int main(int argc, char * argv[])
 {
     initClk();
     signal(SIGUSR1, HPFreceiveProcessHandler);
     signal(SIGCHLD, HPFprocessTermHandler);
+    signal(SIGALRM, RRalarmHandler);
 
     // system("touch Keys/scheduler_gen_msgQ");
     int fileKey = 41;/*ftok("Keys/gen_scheduler_msgQ", 'A');*/
@@ -172,19 +179,22 @@ void SRTN(int numOfProcesses) {
 
 void RR(int numOfProcesses, int quantum) {
     
-    struct Process* processToRun;
+    struct Process* processToRun = NULL;
     struct ProcessMsg processMsg;
+
+    int startTime;
+    int generatedPid;
     
     // Construct a list
-    struct List* RRlist = listConstruct();
+    struct Queue* RRQueue = qConstruct();
 
-    while (1) {
+    while(1) {
         pause();
         printf("clk after pausing %d\n", getClk());
 
         if (isReceived) {
             int receivedStatus = msgrcv(msgQueueID, &processMsg, sizeof(processMsg.process), 0, !IPC_NOWAIT);
-            listPushBack(RRlist, &processMsg.process);
+            qEnqueue(RRQueue, &processMsg.process);
             isReceived = false;
 
             printf("ARRIVED | CLK: %d \t ID: %d \t Arrival: %d\n", 
@@ -193,9 +203,51 @@ void RR(int numOfProcesses, int quantum) {
                 processMsg.process.arrivalTime
             );
         }
+
+        if (processToRun) { 
+
+            if(processToRun -> remainingTime > quantum)
+            {
+                if (!isAlarmed) {
+                    alarm(quantum);
+                    isAlarmed = true;
+                }
+                if (getClk() < startTime + quantum)
+                    continue;
+                
+                processToRun -> remainingTime -= quantum;
+                // processToRun -> pid = generatedPid;
+                printf("ProcessToRun PID: %d\n", processToRun->pid);
+                kill(processToRun->pid, SIGSTOP); // need to be modified
+
+                printf("Stopped | CLK: %d \t ID: %d \t Stop time: %d\n", 
+                    getClk(), 
+                    processToRun -> id,
+                    startTime + quantum
+                );
+
+                qEnqueue(RRQueue , processToRun);
+            }
+
+            else
+            {
+                if (getClk() < startTime + processToRun -> remainingTime)
+                    continue;
+
+            
+                printf("Finished | CLK: %d \t ID: %d \t Finish time: %d\n", 
+                    getClk(), 
+                    processToRun -> id,
+                    startTime + processToRun -> remainingTime
+                );
+                --numOfProcesses;
+                if (numOfProcesses == 0) break;
+                
+            }
+
+        }
         
-        processToRun = listTravValue(RRlist);
-        listAdvanceTrav(RRlist);
+        processToRun = qDequeue(RRQueue);
 
         // First time to run this process
         if (processToRun->remainingTime == processToRun->runningTime) {
@@ -207,8 +259,10 @@ void RR(int numOfProcesses, int quantum) {
             char quantumString[(int)1e5];
             sprintf(quantumString, "%d", quantum);
 
+            startTime = getClk();
+            printf("CLOCK before forking: %d\n", startTime);
             // Fork the process (first time running)
-            int generatedPid = fork();
+            generatedPid = fork();
             if (generatedPid == -1) {
                 printf("ERROR occured while forking the process with ID: %d\n", processToRun->id);
                 exit(-1);
@@ -221,11 +275,24 @@ void RR(int numOfProcesses, int quantum) {
                 else
                     execl("process.out", "process.out", remainingTimeString, NULL);
             }
+            processToRun -> pid = generatedPid;
+            printf("Forked Process PID: %d\n", processToRun->pid);
         }
-
-        // if (getClk() == 
             
+        // Progress the Processes
+
+        else
+        {
+            startTime = getClk();
+            kill (processToRun -> pid, SIGCONT);
+
+            printf("Continued | CLK: %d \t ID: %d\n", 
+                getClk(), 
+                processToRun -> id
+            );
+        }  
     }
+    qDestruct(RRQueue);
 }
 
 void printPerfFile(const char* filePath, float utilization, float avgWTA, float avgWaiting, float stdWTA) {
@@ -242,7 +309,30 @@ void printPerfFile(const char* filePath, float utilization, float avgWTA, float 
     fclose(perfFile);
 }
 
+// void printLogFile(  
+//     const char* filePath, 
+//     int clk, 
+//     int id, 
+//     enum Status status, 
+//     int arrivalTime, 
+//     int totalTime, 
+//     int remainingTime, 
+//     int waitingTime, 
+//     int TA, 
+//     int WTA
+// ) {
 
+//     FILE* logFile = fopen(filePath, "w");		//open the file
+//     if (logFile == NULL) {                    //can't open the file
+//         printf("ERROR! Could not open file %s\n", filePath);
+//         return;  // ERROR occured
+//     }
+
+    
+//     fprintf(logFile, "At time ")
+//     fclose(logFile);
+
+// }
 
 
 
