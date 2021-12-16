@@ -25,7 +25,6 @@ void TEST(int numOfProcesses);
 
 // Global variabes and macros =====================================================
 int msgQueueID;
-
 bool isReceived = false;
 bool isRunning = false;
 
@@ -41,10 +40,9 @@ void HPFprocessTermHandler(int signum) {
 
 int main(int argc, char * argv[])
 {
-
+    initClk();
     signal(SIGUSR1, HPFreceiveProcessHandler);
     signal(SIGCHLD, HPFprocessTermHandler);
-    initClk();
 
     // system("touch Keys/scheduler_gen_msgQ");
     int fileKey = 41;/*ftok("Keys/gen_scheduler_msgQ", 'A');*/
@@ -75,12 +73,11 @@ int main(int argc, char * argv[])
     //     exit(-1);
     // }
 
-
     switch(algoMsg.chosenAlgo) {
     case 1:
         // HPF
-        // HPF(algoMsg.numOfProcesses);
-        TEST(algoMsg.numOfProcesses);
+        HPF(algoMsg.numOfProcesses);    // Recent
+        // TEST(algoMsg.numOfProcesses);
         break;
     case 2:
         // SRTN
@@ -104,7 +101,7 @@ int main(int argc, char * argv[])
 
 
 
-void TEST(int numOfProcesses) {
+void HPF(int numOfProcesses) {
     
     struct Process* processToRun;
     struct ProcessMsg processMsg;
@@ -130,13 +127,6 @@ void TEST(int numOfProcesses) {
         }
         
         if (isRunning) continue;
-        //   printf("FINISHED | CLK: %d \t PID: %d \t ID: %d \t Arrival: %d \t Running: %d\n", 
-        //         getClk(), 
-        //         processToRun->pid,
-        //         processToRun->id,
-        //         processToRun->arrivalTime,
-        //         processToRun->runningTime
-        //     );
         
         if (numOfProcesses == 0) break;
         if (pqIsEmpty(hpfQueue)) continue;
@@ -175,7 +165,89 @@ void TEST(int numOfProcesses) {
     // Destruct the priority queue
     pqDestruct(hpfQueue);
 }
-void HPF(int numOfProcesses) {
+
+void SRTN(int numOfProcesses) {
+
+}
+
+void RR(int numOfProcesses, int quantum) {
+    
+    struct Process* processToRun;
+    struct ProcessMsg processMsg;
+    
+    // Construct a list
+    struct List* RRlist = listConstruct();
+
+    while (1) {
+        pause();
+        printf("clk after pausing %d\n", getClk());
+
+        if (isReceived) {
+            int receivedStatus = msgrcv(msgQueueID, &processMsg, sizeof(processMsg.process), 0, !IPC_NOWAIT);
+            listPushBack(RRlist, &processMsg.process);
+            isReceived = false;
+
+            printf("ARRIVED | CLK: %d \t ID: %d \t Arrival: %d\n", 
+                getClk(), 
+                processMsg.process.id,
+                processMsg.process.arrivalTime
+            );
+        }
+        
+        processToRun = listTravValue(RRlist);
+        listAdvanceTrav(RRlist);
+
+        // First time to run this process
+        if (processToRun->remainingTime == processToRun->runningTime) {
+
+            // Convert both the quantum and remaining time to strings
+            char remainingTimeString[(int)1e5];
+            sprintf(remainingTimeString, "%d", processToRun->remainingTime);
+
+            char quantumString[(int)1e5];
+            sprintf(quantumString, "%d", quantum);
+
+            // Fork the process (first time running)
+            int generatedPid = fork();
+            if (generatedPid == -1) {
+                printf("ERROR occured while forking the process with ID: %d\n", processToRun->id);
+                exit(-1);
+            }
+
+            if (generatedPid == 0) {
+                if (processToRun->remainingTime > quantum)
+                    execl("process.out", "process.out", quantumString, NULL);
+                
+                else
+                    execl("process.out", "process.out", remainingTimeString, NULL);
+            }
+        }
+
+        // if (getClk() == 
+            
+    }
+}
+
+void printPerfFile(const char* filePath, float utilization, float avgWTA, float avgWaiting, float stdWTA) {
+    FILE* perfFile = fopen(filePath, "w");		//open the file
+    if (perfFile == NULL) {                    //can't open the file
+        printf("ERROR! Could not open file %s\n", filePath);
+        return;  // ERROR occured
+    }
+    fprintf(perfFile, "CPU utilization = %2f%%\n", utilization);
+    fprintf(perfFile, "Avg WTA = %2f\n", avgWTA);
+    fprintf(perfFile, "Avg Waiting = %2f\n", avgWaiting);
+    fprintf(perfFile, "Std WTA = %2f", stdWTA);
+
+    fclose(perfFile);
+}
+
+
+
+
+
+
+void TEST(int numOfProcesses) {
     
     bool isInitial = true;      // Flag: to control if it is the first iteration in the loop or not
     bool isFinished = false;    // Flag: to check if is the last process or not
@@ -283,68 +355,4 @@ void HPF(int numOfProcesses) {
 
     // Destruct the priority queue
     pqDestruct(hpfQueue);
-}
-
-void SRTN(int numOfProcesses) {
-
-}
-
-void RR(int numOfProcesses, int quantum) {
-    
-    struct Process* processToRun;
-    struct ProcessMsg processMsg;
-    
-    // Construct a list
-    struct List* RRlist = listConstruct();
-
-    while (1) {
-        pause();
-        printf("clk after pausing %d\n", getClk());
-
-        if (isReceived) {
-            int receivedStatus = msgrcv(msgQueueID, &processMsg, sizeof(processMsg.process), 0, !IPC_NOWAIT);
-            listPushBack(RRlist, &processMsg.process);
-            isReceived = false;
-
-            printf("ARRIVED | CLK: %d \t ID: %d \t Arrival: %d\n", 
-                getClk(), 
-                processMsg.process.id,
-                processMsg.process.arrivalTime
-            );
-        }
-        
-        processToRun = listTravValue(RRlist);
-        listAdvanceTrav(RRlist);
-
-        // First time to run this process
-        if (processToRun->remainingTime == processToRun->runningTime) {
-
-            // Convert both the quantum and remaining time to strings
-            char remainingTimeString[(int)1e5];
-            sprintf(remainingTimeString, "%d", processToRun->remainingTime);
-
-            char quantumString[(int)1e5];
-            sprintf(quantumString, "%d", quantum);
-
-            // Fork the process (first time running)
-            int generatedPid = fork();
-            if (generatedPid == -1) {
-                printf("ERROR occured while forking the process with ID: %d\n", processToRun->id);
-                exit(-1);
-            }
-
-            if (generatedPid == 0) {
-                if (processToRun->remainingTime > quantum)
-                    execl("process.out", "process.out", quantumString, NULL);
-                
-                else
-                    execl("process.out", "process.out", remainingTimeString, NULL);
-            }
-        }
-
-        // if (getClk() == 
-            
-
-        
-    }
 }

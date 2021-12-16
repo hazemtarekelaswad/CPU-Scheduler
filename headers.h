@@ -36,7 +36,6 @@ struct Process {
     int waitingTime;
     int finishTime;
     enum Status status;  //? Can be modified
-    // long pid;
     // TODO Add any process-related data 
 };
 
@@ -85,7 +84,6 @@ void destroyClk(bool terminateAll)
     shmdt(shmaddr);
     if (terminateAll)
     {
-        puts("destroy inside if\n");
         killpg(getpgrp(), SIGINT);
     }
 }

@@ -152,8 +152,7 @@ int main(int argc, char * argv[])
     else
         printf("Process with PID: %d is terminated successfully with exit code: %d\n", child_pid, WEXITSTATUS(status));
     
-    free(processes);
-    puts("TErm  after generato\n");
+    // free(processes);
 
     destroyClk(true);
     return 0;
