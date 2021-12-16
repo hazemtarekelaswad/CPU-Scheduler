@@ -99,27 +99,12 @@ int main(int argc, char * argv[])
     
     // //upon termination release the clock resources
     destroyClk(false);
-    puts("TErm scheuler\n");
     exit(0);
 }
 
 
 
 void TEST(int numOfProcesses) {
-    // struct ProcessMsg processMsg;
-    // while (1) {
-    //     pause();
-    //     if (isReceived) {
-
-    //         int receivedStatus = msgrcv(msgQueueID, &processMsg, sizeof(processMsg) - sizeof(processMsg.type), 0, !IPC_NOWAIT);
-    //         printf("ARRIVED | CLK: %d \t ID: %d \t Arrival: %d\n", 
-    //             getClk(), 
-    //             processMsg.process.id,
-    //             processMsg.process.arrivalTime
-    //         );
-    //     }
-        
-    // }
     
     struct Process* processToRun;
     struct ProcessMsg processMsg;
