@@ -85,6 +85,7 @@ void destroyClk(bool terminateAll)
     shmdt(shmaddr);
     if (terminateAll)
     {
+        puts("destroy inside if\n");
         killpg(getpgrp(), SIGINT);
     }
 }

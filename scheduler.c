@@ -98,8 +98,8 @@ int main(int argc, char * argv[])
 
     
     // //upon termination release the clock resources
-    
     destroyClk(false);
+    puts("TErm scheuler\n");
     exit(0);
 }
 
@@ -357,7 +357,7 @@ void RR(int numOfProcesses, int quantum) {
             }
         }
 
-        if (getClk() == 
+        // if (getClk() == 
             
 
         
