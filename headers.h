@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <math.h>
 
 // Type definitions
 typedef short bool;

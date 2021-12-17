@@ -106,6 +106,15 @@ int main(int argc, char * argv[])
 }
 
 void HPF(int numOfProcesses) {
+    FILE* logFile = fopen("scheduler.log", "w");		//open the file
+    if (logFile == NULL) {                    //can't open the file
+        printf("ERROR! Could not open file");
+        return;  // ERROR occured
+    }
+    bool isFirst = true;
+    int sumOfRunning = 0;
+    float sumOfWTA = 0;
+
     signal(SIGCHLD, HPFprocessTermHandler);
     struct Process* processToRun;
     struct ProcessMsg processMsg;
@@ -117,10 +126,11 @@ void HPF(int numOfProcesses) {
     while (1) {
            
         pause();
-        printf("clk after pausing %d\n", getClk());
         if (isReceived) {
 
             int receivedStatus = msgrcv(msgQueueID, &processMsg, sizeof(processMsg.process), 0, !IPC_NOWAIT);
+            sumOfRunning += processMsg.process.runningTime;
+           
             struct Process* heapProcess = (struct Process*)malloc(sizeof(struct Process));
             *heapProcess = processMsg.process;
             pqEnqueue(hpfQueue, heapProcess, processMsg.process.priority);
@@ -134,7 +144,21 @@ void HPF(int numOfProcesses) {
         }
         
         if (isRunning) continue;
-        
+        if (!isFirst) {
+            OutFile_Starting(
+                logFile, 
+                4, 
+                processToRun->id, 
+                processToRun->arrivalTime,
+                processToRun->runningTime,
+                0,
+                0,  // 0 for HPF
+                getClk()
+            );
+            sumOfWTA += 1.0 * (getClk() - processToRun->arrivalTime) / processToRun->runningTime;
+        }
+        isFirst = false;
+    
         if (numOfProcesses == 0) break;
         if (pqIsEmpty(hpfQueue)) continue;
 
@@ -142,13 +166,17 @@ void HPF(int numOfProcesses) {
         --numOfProcesses;
 
         processToRun = pqDequeue(hpfQueue);
-
-        printf("STARTED | CLK: %d \t ID: %d \t Arrival: %d \t Running: %d\n", 
-                getClk(), 
-                processToRun->id,
+        OutFile_Starting(
+                logFile, 
+                1, 
+                processToRun->id, 
                 processToRun->arrivalTime,
-                processToRun->runningTime
-            );
+                processToRun->runningTime,
+                processToRun->remainingTime,
+                0,  // 0 for HPF
+                getClk()
+        );
+       
 
         isRunning = true;    
         // Convert the remaining time to string and pass it as a process argument 
@@ -166,11 +194,18 @@ void HPF(int numOfProcesses) {
             execl("process.out", "process.out", remainingTimeString, NULL);
         }
         
-
     }
-
+    
+    printPerfFile(
+        "scheduler.perf", 
+        1.0 * getClk() / sumOfRunning, 
+        sumOfWTA / numOfProcesses, 
+        0, 
+        ((sumOfWTA - numOfProcesses * (sumOfWTA / numOfProcesses)) / numOfProcesses)
+    );
     // Destruct the priority queue
     pqDestruct(hpfQueue);
+    fclose(logFile);
 }
 
 void SRTN(int numOfProcesses) {
