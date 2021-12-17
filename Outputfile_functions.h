@@ -1,12 +1,61 @@
 //In the start
-void OutFile_Begining (file* f)
+void OutFile_Begining (const char* filePath)
 {
-	f = fopen("logs/scheduler.log", "w");
-	fprintf(f, "#At time \t x \t process \t y \t state \t arr \t w \t total \t z \t remain \t y \t wait \t \n");
-	fclose(f);
+    FILE* logFile = fopen(filePath, "w");		//open the file
+    if (logFile == NULL) {                    //can't open the file
+        printf("ERROR! Could not open file %s\n", filePath);
+        return;  // ERROR occured
+    }
+    fprintf(f, "#At time \t x \t process \t y \t state \t arr \t w \t total \t z \t remain \t y \t wait \t \n");
+    fclose(f);
 }
+//Integrated Function for the 4 cases of processes
+void OutFile_Starting (const char* filePath,int status, int id_curProc, int AT_curProc, int RunT_curProc, int RemT_curProc, int WaitT_curProc, int clk)
+{
+/*
+status =1 -> start
+status =2 -> stop
+status =3 -> resume
+status =4 -> finish
+*/
+FILE* logFile = fopen(filePath, "w");		//open the file
+    if (logFile == NULL) {                    //can't open the file
+        printf("ERROR! Could not open file %s\n", filePath);
+        return;  // ERROR occured
+    }
+
+if(status == 1)
+{
+fprintf(logFile, "At time \t %d \t process \t %d \t started \t arr \t %d \t total \t %d \t remain \t %d \t wait \t %d \n",clk,id_curProc,AT_curProc,RunT_curProc,RemT_curProc,WaitT_curProc);
+fclose(logFile);
+}
+else if (stauts == 2)
+{
+	//parameters are previous process not currently
+fprintf(logFile, "At time \t %d \t process \t %d \t stopped \t arr \t %d \t total \t %d \t remain \t %d \t wait \t %d \n",clk, id_curProc,AT_curProc,RunT_curProc,RemT_curProc,WaitT_curProc);
+fclose(logFile);
+}
+else if (stauts == 3)
+{
+fprintf(logFile, "At time \t %d \t process \t %d \t resumed \t arr \t %d \t total \t %d \t remain \t %d \t wait \t %d \n",clk,id_curProc,AT_curProc,RunT_curProc,RemT_curProc,WaitT_curProc);
+fclose(logFile);
+}
+else if (stauts == 4)
+{
+fprintf(logFile, "At time \t %d \t process \t %d \t finished \t arr \t %d \t total \t %d \t remain \t %d \t wait \t %d \t TA \t %d \t WTA \t %.2f\n",clk,id_curProc,AT_curProc,RunT_curProc,RemT_curProc,WaitT_curProc,getClk()-AT_curProc,(getClk()-AT_curProc)/(RunT_curProc))
+fclose(logFile);
+}
+else
+{
+  printf("ERROR! Could not open file %s\n", filePath);
+  return;  // ERROR occured
+}
+	
+}
+
+
 //When Starting a process
-void OutFile_Starting (file* f, int id_curProc, int AT_curProc, int RunT_curProc, int RemT_curProc, int WaitT_curProc)
+/*void OutFile_Starting (file* f, int id_curProc, int AT_curProc, int RunT_curProc, int RemT_curProc, int WaitT_curProc)
 {
 	f = fopen("logs/scheduler.log", "a");
 	fprintf(f, "At time \t %d \t process \t %d \t started \t arr \t %d \t total \t %d \t remain \t %d \t wait \t %d \n",
@@ -42,4 +91,4 @@ void OutFile_Finishing (file* f, , int id_curProc, int AT_curProc, int RunT_curP
 	,AT_curProc,RunT_curProc,RemT_curProc,
 	WaitT_curProc,getClk()-AT_curProc,(getClk()-AT_curProc)/(RunT_curProc));
 	fclose(f);
-}
+}*/
