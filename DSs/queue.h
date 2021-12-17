@@ -72,8 +72,11 @@ qValueType qDequeue(struct Queue* queue) {
 }
 
 void qDestruct(struct Queue* queue) {
-    while (!qIsEmpty(queue))
-        qDequeue(queue);
+    while (!qIsEmpty(queue)) {
+        qValueType dequeued = qDequeue(queue);
+        free(dequeued);
+    }
+
     queue = NULL;
 }
 

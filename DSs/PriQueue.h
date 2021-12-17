@@ -92,8 +92,10 @@ pqValueType pqDequeue(struct PriQueue* priQueue) {
 }
 
 void pqDestruct(struct PriQueue* priQueue) {
-    while (!pqIsEmpty(priQueue))
-        pqDequeue(priQueue);
+    while (!pqIsEmpty(priQueue)) {
+        pqValueType dequeued = pqDequeue(priQueue);
+        free(dequeued);
+    }
     priQueue = NULL;
 }
 
