@@ -3,12 +3,6 @@
 #include <time.h>
 
 // Structs ====================================
-struct AlgorithmMsg {
-    long type;
-    int chosenAlgo;
-    int parameter;
-    int numOfProcesses;
-};
 
 struct ProcessMsg {
     long type;
@@ -49,27 +43,22 @@ int main(int argc, char * argv[])
     int chosenAlgo;
     scanf("%d", &chosenAlgo);
 
-    struct AlgorithmMsg algoMsg;
-    algoMsg.type = 1;   // any type
-    algoMsg.chosenAlgo = chosenAlgo;
-    algoMsg.numOfProcesses = numOfProcesses;
+    int parameter;
 
     switch(chosenAlgo) {
     case 1:
         // HPF
-        algoMsg.parameter = -1; // No parameters
+        parameter = -1; // No parameters
         break;
     case 2:
         // SRTN
-        algoMsg.parameter = -1; // No parameters
+        parameter = -1; // No parameters
         break;
     case 3: {
 
         // RR
-        int RRParameter;
         printf("Enter the RR Quantum: ");
-        scanf("%d", &RRParameter);
-        algoMsg.parameter = RRParameter; // There exist a quantum
+        scanf("%d", &parameter);
         break;
     }
     default:
@@ -77,6 +66,12 @@ int main(int argc, char * argv[])
         exit(-1);
     }
 
+    char chosenAlgoString[(int)1e5];
+    sprintf(chosenAlgoString, "%d", chosenAlgo);
+    char parameterString[(int)1e5];
+    sprintf(parameterString, "%d", parameter);
+    char countString[(int)1e5];
+    sprintf(countString, "%d", numOfProcesses);
 
     // Initiate and create the scheduler and the clock processes.
     int schedulerPID;
@@ -87,27 +82,21 @@ int main(int argc, char * argv[])
             exit(-1);
         }
         if (i == 0 && pid == 0)
-            execl("scheduler.out", "scheduler.out", NULL);
+            execl("scheduler.out", "scheduler.out", chosenAlgoString, parameterString, countString, NULL);
         else if (i == 1 && pid == 0)
             execl("clk.out", "clk.out", NULL);
         if (i == 0 && pid != 0)
             schedulerPID = pid;
     }
+
+    // If you are the (process_generator)
+    initClk();
     // Create msg queue between process generator and the scheduler
     // system("touch Keys/gen_scheduler_msgQ");
     int fileKey = 41;/*ftok("Keys/gen_scheduler_msgQ", 'A');*/
-
     msgQueueID = msgget(fileKey, 0666 | IPC_CREAT);
     if (msgQueueID == -1) {
         perror("ERROR occured during creating the message queue\n");
-        exit(-1);
-    }
-    // If you are the (process_generator)
-    initClk();
-    // Send the algo choice and parameters to the scheduler
-    int isSent = msgsnd(msgQueueID, &algoMsg, sizeof(algoMsg) - sizeof(algoMsg.type), !IPC_NOWAIT);
-    if (isSent == -1) {
-        perror("ERROR occured during sending the algorithm information to the scheduler\n");
         exit(-1);
     }
 
