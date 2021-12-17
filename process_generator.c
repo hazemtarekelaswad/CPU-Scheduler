@@ -30,7 +30,7 @@ int main(int argc, char * argv[])
     scanf("%s", filePath); 
     // read an input file specified and put it in processes.
     struct Process* processes;  //! array of processes, DON'T forget to DELETE it later
-    int numOfProcesses = readFile("testProcesses2.txt", &processes); // returns the number of processes created
+    int numOfProcesses = readFile("testProcesses.txt", &processes); // returns the number of processes created
     if (numOfProcesses == -1)
         exit(-1);
     // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.

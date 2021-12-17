@@ -2,6 +2,7 @@
 #include "DSs/PriQueue.h"
 #include "DSs/queue.h"
 #include "DSs/list.h"
+#include "Outputfile_functions.h"
 
 // Structs ====================================
 
@@ -18,7 +19,6 @@ void RR(int numOfProcesses, int quantum);
 void TEST(int numOfProcesses);
 void TESTSRTN(int numOfProcesses);
 
-void printPerfFile(const char* filePath, float utilization, float avgWTA, float avgWaiting, float stdWTA); 
 
 // Global variabes and macros =====================================================
 int msgQueueID;
@@ -231,7 +231,7 @@ void SRTN(int numOfProcesses) {
         if (generatedPid != 0) {
             //pqEnqueue(srtnQueue, &processMsg.process, processMsg.process.remainingTime);
             processMsg.process.pid = generatedPid;
-            pqEnqueue(srtnQueue, &processMsg.process, processMsg.process.remainingTime);
+            // pqEnqueue(srtnQueue, &processMsg.process, processMsg.process.remainingTime);
             //processToRun = pqDequeue(srtnQueue);
         }
         if (generatedPid == 0) {
@@ -247,12 +247,12 @@ void SRTN(int numOfProcesses) {
 
         if (startTime==0)
         {
-            int estimatedrt = processToRun->remainingTime - (getClk() - processToRun->arrivalTime ) ;//
+            int estimatedrt = processToRun->remainingTime - (getClk() - processToRun->arrivalTime ) ;
             processToRun->remainingTime = estimatedrt;
         }
         else
         {
-            int estimatedrt = processToRun->remainingTime - (getClk() - startTime) ;//
+            int estimatedrt = processToRun->remainingTime - (getClk() - startTime);
             processToRun->remainingTime = estimatedrt;
         }
 
@@ -320,30 +320,7 @@ void TESTSRTN(int numOfProcesses) {
             // pqEnqueue(srtnQueue, &processMsg.process, processMsg.process.runningTime);
             struct Process* heapProcess = (struct Process*)malloc(sizeof(struct Process));
             *heapProcess = processMsg.process;
-            pqEnqueue(srtnQueue, heapProcess, processMsg.process.runningTime);
-            processToRun = pqFront(srtnQueue);
-
-            if (startTime==0)
-            {
-                int estimatedrt = processToRun->remainingTime - (getClk() - processToRun->arrivalTime ) ;//
-                processToRun->remainingTime = estimatedrt;
-            }
-            else
-            {
-                int estimatedrt = processToRun->remainingTime - (getClk() - startTime) ;//
-                processToRun->remainingTime = estimatedrt;
-            }
-
-
-            if(temp->remainingTime < processToRun->remainingTime )
-            {
-                kill(processToRun->pid,SIGSTOP);
-                processToRun=temp;
-                kill(processToRun->pid,SIGCONT);
-                startTime=getClk();
-
-            }
-
+            pqEnqueue(srtnQueue, heapProcess, processMsg.process.remainingTime);
 
             isReceived = false;
             printf("ARRIVED | CLK: %d \t ID: %d \t Arrival: %d\n", 
@@ -353,6 +330,7 @@ void TESTSRTN(int numOfProcesses) {
             );
         }
         
+        processToRun = pqFront(srtnQueue);
         //kill(processToRun->pid,SIGCONT);
         
          printf("STARTED | CLK: %d     ID: %d    Arriaval: %d    RunningTime: %d    Pri: %d\n",
@@ -367,25 +345,56 @@ void TESTSRTN(int numOfProcesses) {
      //   if (numOfProcesses == 0)
             //isFinished = true;
 
-        // Convert the remaining time to string and pass it as a process argument
-        char remainingTimeString[(int)1e5];
-        sprintf(remainingTimeString, "%d", processMsg.process.remainingTime);
+        // if (processToRun->remainingTime == processToRun->runningTime) {
 
-        // Fork the arrived process
-        int generatedPid = fork();
-        if (generatedPid == 0) {
-            //3mlt process gdeeda e3mlha enque
-            //processMsg.process.pid = generatedPid
-            //pqEnqueue(srtnQueue, &newProcess.process, newProcess.process.runningTime);
-            //processToRun = pqDequeue(srtnQueue);
-            execl("process.out", "process.out", remainingTimeString, NULL);//fork process w t43'lha
+            // Convert the remaining time to string and pass it as a process argument
+            char remainingTimeString[(int)1e5];
+            sprintf(remainingTimeString, "%d", processMsg.process.remainingTime);
+
+            // Fork the arrived process
+            int generatedPid = fork();
+
+            if (generatedPid != 0) {
+                //pqEnqueue(srtnQueue, &processMsg.process, processMsg.process.remainingTime);
+                processMsg.process.pid = generatedPid;
+                pqEnqueue(srtnQueue, &processMsg.process, processMsg.process.remainingTime);
+                //processToRun = pqDequeue(srtnQueue);
+            }
+            if (generatedPid == 0) {
+                //3mlt process gdeeda e3mlha enque
+                //processMsg.process.pid = generatedPid
+                //pqEnqueue(srtnQueue, &newProcess.process, newProcess.process.runningTime);
+                //processToRun = pqDequeue(srtnQueue);
+                execl("process.out", "process.out", remainingTimeString, NULL);//fork process w t43'lha
+            }
+            kill(generatedPid,SIGSTOP);//processs y5leeh elchild y2of
+        // }
+         temp = pqFront(srtnQueue);
+
+
+        if (startTime==0)
+        {
+            int estimatedrt = processToRun->remainingTime - (getClk() - processToRun->arrivalTime ) ;//
+            processToRun->remainingTime = estimatedrt;
         }
-        processMsg.process.pid = generatedPid;
-        // kill(generatedPid, SIGSTOP);//processs y5leeh elchild y2of
-        temp = pqFront(srtnQueue);
+        else
+        {
+            int estimatedrt = processToRun->remainingTime - (getClk() - startTime) ;//
+            processToRun->remainingTime = estimatedrt;
+        }
 
 
-        
+        if(temp->remainingTime < processToRun->remainingTime )
+        {
+            kill(processToRun->pid,SIGSTOP);
+            pqEnqueue(srtnQueue, processToRun, processToRun->remainingTime);
+            processToRun=temp;
+            kill(processToRun->pid,SIGCONT);
+
+            startTime=getClk();
+
+        }
+
        // isInitial = false;
         //--numOfProcesses;
         //if (numOfProcesses == 0)
@@ -530,6 +539,7 @@ void RR(int numOfProcesses, int quantum) {
             startTime = getClk();
             kill (processToRun -> pid, SIGCONT);
 
+           
             printf("Continued | CLK: %d \t ID: %d\n", 
                 getClk(), 
                 processToRun -> id
@@ -538,45 +548,6 @@ void RR(int numOfProcesses, int quantum) {
     }
     qDestruct(RRQueue);
 }
-
-void printPerfFile(const char* filePath, float utilization, float avgWTA, float avgWaiting, float stdWTA) {
-    FILE* perfFile = fopen(filePath, "w");		//open the file
-    if (perfFile == NULL) {                    //can't open the file
-        printf("ERROR! Could not open file %s\n", filePath);
-        return;  // ERROR occured
-    }
-    fprintf(perfFile, "CPU utilization = %2f%%\n", utilization);
-    fprintf(perfFile, "Avg WTA = %2f\n", avgWTA);
-    fprintf(perfFile, "Avg Waiting = %2f\n", avgWaiting);
-    fprintf(perfFile, "Std WTA = %2f", stdWTA);
-
-    fclose(perfFile);
-}
-
-// void printLogFile(  
-//     const char* filePath, 
-//     int clk, 
-//     int id, 
-//     enum Status status, 
-//     int arrivalTime, 
-//     int totalTime, 
-//     int remainingTime, 
-//     int waitingTime, 
-//     int TA, 
-//     int WTA
-// ) {
-
-//     FILE* logFile = fopen(filePath, "w");		//open the file
-//     if (logFile == NULL) {                    //can't open the file
-//         printf("ERROR! Could not open file %s\n", filePath);
-//         return;  // ERROR occured
-//     }
-
-    
-//     fprintf(logFile, "At time ")
-//     fclose(logFile);
-
-// }
 
 
 
