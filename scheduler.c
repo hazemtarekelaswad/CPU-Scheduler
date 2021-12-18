@@ -225,7 +225,8 @@ void HPF(int numOfProcesses) {
 }
 
 
-void SRTN(int numOfProcesses) {
+
+  void SRTN(int numOfProcesses) {
     signal(SIGUSR2, SRTNprocessTermHandler);
     struct Process* processToRun = NULL; //deeh el7atrun
     struct PriQueue* srtnQueue = pqConstruct(); // Construct a priority queue
@@ -238,8 +239,6 @@ void SRTN(int numOfProcesses) {
 
         if(isFinished)
         {
-            // if(processToRun->remainingTime<=0)
-            // {
              printf("FINISHED | CLK: %d     ID: %d    Arriaval: %d    RunningTime: %d    Pri: %d\n",
              getClk() - startTime,
              processToRun->id,
@@ -254,9 +253,6 @@ void SRTN(int numOfProcesses) {
             processToRun = pqFront(srtnQueue);
             kill(processToRun->pid,SIGCONT);
             isFinished = false;
-            // }
-            // else
-                // isFinished = false;
         }
 
         printf("clk after pausing %d\n", getClk());
@@ -291,7 +287,6 @@ void SRTN(int numOfProcesses) {
         // Convert the remaining time to string and pass it as a process argument
         char remainingTimeString[(int)1e5];
         sprintf(remainingTimeString, "%d", processMsg.process.remainingTime);
-
         // Fork the arrived process
         int generatedPid = fork();
         if (generatedPid == -1) {
@@ -302,6 +297,8 @@ void SRTN(int numOfProcesses) {
          else if (generatedPid == 0) {
             execl("process.out", "process.out", remainingTimeString, NULL);//fork process w t43'lha
         }
+        else
+        {
         if (isInitialSrtn==true) // awl mra mfee4 3,airha yb2a runha
         {
             isInitialSrtn=false;
@@ -346,6 +343,7 @@ void SRTN(int numOfProcesses) {
         }
         else
             startTime=getClk();
+        }
     }
 
     //enque tb2a feeh elready state while deque tb2a finished
