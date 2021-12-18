@@ -102,7 +102,9 @@ void HPF(int numOfProcesses) {
     }
     int sumOfRunning = 0;
     float* WTA_array = (float*)malloc(sizeof(float) * numOfProcesses);
-    int index = 0;
+    float* Waiting_array = (float*)malloc(sizeof(float) * numOfProcesses);
+    int index_waiting = 0;
+    int index_WTA = 0;
     int finishClk;
     // ============================================
 
@@ -131,8 +133,10 @@ void HPF(int numOfProcesses) {
         } while(1);
 
         while (!pqIsEmpty(hpfQueue)) {
-
+            int startClk = getClk();
             processToRun = pqDequeue(hpfQueue);
+            
+            processToRun->waitingTime = startClk - processToRun->arrivalTime;
 
             //! start
             OutFile_Starting(
@@ -142,8 +146,8 @@ void HPF(int numOfProcesses) {
                 processToRun->arrivalTime,
                 processToRun->runningTime,
                 processToRun->remainingTime,
-                0,  // 0 for HPF
-                getClk()
+                processToRun->waitingTime,  // 0 for HPF
+                startClk
             );
 
             // printf("STARTED | CLK: %d \t ID: %d \t Arrival: %d \t Running: %d\n", 
@@ -182,11 +186,11 @@ void HPF(int numOfProcesses) {
                 processToRun->arrivalTime,
                 processToRun->runningTime,
                 0,
-                0,  // 0 for HPF
+                processToRun->waitingTime,  
                 finishClk
             );
-            WTA_array[index++] = 1.0 * (finishClk - processToRun->arrivalTime) / processToRun->runningTime;
-            
+            WTA_array[index_WTA++] = 1.0 * (finishClk - processToRun->arrivalTime) / processToRun->runningTime;
+            Waiting_array[index_waiting++] = processToRun->waitingTime;
             // printf("Finished | CLK: %d \t ID: %d \t Arrival: %d \t Running: %d\n", 
             //     getClk(), 
             //     processToRun->id,
@@ -202,11 +206,15 @@ void HPF(int numOfProcesses) {
     }
     // ============ For O/P File ===========================
     float sumOfWTA = 0;
-    for (int i = 0; i < countProcesses; ++i)
+    float sumOfWaiting = 0;
+    for (int i = 0; i < countProcesses; ++i) {
         sumOfWTA += WTA_array[i];
+        sumOfWaiting += Waiting_array[i];
+    }
 
     float accum = 0;
     float avgWTA = sumOfWTA / countProcesses;
+    float avgWaiting = sumOfWaiting / countProcesses;
     for (int i = 0; i < countProcesses; ++i)
         accum += (WTA_array[i] - avgWTA) * (WTA_array[i] - avgWTA);
 
@@ -214,7 +222,7 @@ void HPF(int numOfProcesses) {
         "scheduler.perf", 
         1.0 * sumOfRunning / finishClk, 
         avgWTA, 
-        0, 
+        avgWaiting, 
         sqrt((double)accum / countProcesses)
     );
     free(WTA_array);
