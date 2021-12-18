@@ -16,9 +16,6 @@ void HPF(int numOfProcesses);
 void SRTN(int numOfProcesses);
 void RR(int numOfProcesses, int quantum);
 
-void TEST(int numOfProcesses);
-void TESTSRTN(int numOfProcesses);
-
 
 // Global variabes and macros =====================================================
 int msgQueueID;
@@ -58,20 +55,8 @@ int main(int argc, char * argv[])
     // Receive the information of the chosen algorithm from the generator
     // struct AlgorithmMsg algoMsg;
 
-    
-    // printf("Chosen Algo: %d\n", algoMsg.chosenAlgo);    // FOR DEBUGGING
-    
-    // Msg queue for receiving the process Finish Time
-    // system("touch Keys/scheduler_process_msgQ");
-    // int fileKeyProcess = ftok("Keys/scheduler_process_msgQ", 'B');
+   
 
-    // msgQueueProcessID = msgget(fileKeyProcess, 0666 | IPC_CREAT);
-    // if (msgQueueProcessID == -1) {
-    //     perror("ERROR occured during getting the msg queue from the process to scheduler\n");
-    //     exit(-1);
-    // }
-
-      // system("touch Keys/scheduler_gen_msgQ");
     int fileKey = 41;/*ftok("Keys/gen_scheduler_msgQ", 'A');*/
 
     msgQueueID = msgget(fileKey, 0666 | IPC_CREAT);
@@ -106,190 +91,6 @@ int main(int argc, char * argv[])
     exit(0);
 }
 
-void HPF3(int numOfProcesses) {
-    signal(SIGCHLD, HPFprocessTermHandler);
-
-    struct Process* processToRun;
-
-    struct ProcessMsg processMsg;
-
-    
-
-    // Construct a priority queue
-
-    struct PriQueue* hpfQueue = pqConstruct();
-
-
-
-    // struct TerminationMsg termMsg;
-
-    int receivedStatus;
-
-    while (1) {
-
-        
-
-        receivedStatus = 1;
-
-
-
-        while (receivedStatus != -1)
-
-        {
-
-            receivedStatus= msgrcv(msgQueueID, &processMsg, sizeof(processMsg.process), 0, IPC_NOWAIT);
-
-            
-
-            if (receivedStatus == -1)
-
-                break;
-
-
-
-            printf("ARRIVED | CLK: %d \t ID: %d \t Arrival: %d\n", 
-
-                getClk(), 
-
-                processMsg.process.id,
-
-                processMsg.process.arrivalTime
-
-            );
-
-
-
-            struct Process* heapProcess = (struct Process*)malloc(sizeof(struct Process));
-
-            *heapProcess = processMsg.process;
-
-            pqEnqueue(hpfQueue, heapProcess, processMsg.process.priority);
-
-        }
-
-
-
-        /*
-
-        if (isRunning) continue;
-
-        
-
-        if (numOfProcesses == 0) break;
-
-        if (pqIsEmpty(hpfQueue)) continue;
-
-
-
-        */
-
-
-
-        // ==== Run the process ====
-
-        // --numOfProcesses;
-
-
-
-        while (pqFront(hpfQueue) != NULL)
-
-        {
-
-        processToRun = pqDequeue(hpfQueue);
-
-
-
-        printf("STARTED | CLK: %d \t ID: %d \t Arrival: %d \t Running: %d\n", 
-
-                getClk(), 
-
-                processToRun->id,
-
-                processToRun->arrivalTime,
-
-                processToRun->runningTime
-
-            );
-
-
-
-        char remainingTimeString[(int)1e5];
-
-        sprintf(remainingTimeString, "%d", processToRun->remainingTime);
-
-        
-
-        // Fork the arrived process
-
-        int generatedPid = fork();
-
-        if (generatedPid == -1) {
-
-            printf("ERROR occured while forking the process with ID: %d\n", processToRun->id);
-
-            exit(-1);
-
-        }
-
-
-
-        else if (generatedPid == 0) {
-
-            execl("process.out", "process.out", remainingTimeString, NULL);
-
-        }
-
-
-
-        int s; 
-
-        generatedPid = wait(&s);
-
-
-
-        //if (WIFEXITED(s))
-
-
-
-        printf("Finished | CLK: %d \t ID: %d \t Arrival: %d \t Running: %d\n", 
-
-                getClk(), 
-
-                processToRun->id,
-
-                processToRun->arrivalTime,
-
-                processToRun->runningTime
-
-            );
-
-        numOfProcesses--;
-
-
-
-        }
-
-
-
-        if (numOfProcesses == 0)
-
-            break;
-
-        //isRunning = true;    
-
-        // Convert the remaining time to string and pass it as a process argument 
-
-    
-
-    }
-
-
-
-    // Destruct the priority queue
-
-    pqDestruct(hpfQueue);
-
-}
 
 void HPF(int numOfProcesses) {
     // ========= for the O/P File ================
@@ -300,7 +101,7 @@ void HPF(int numOfProcesses) {
         return;  // ERROR occured
     }
     int sumOfRunning = 0;
-    float* WTA_array = (float*)malloc(sizeof(float));
+    float* WTA_array = (float*)malloc(sizeof(float) * numOfProcesses);
     int index = 0;
     int finishClk;
     // ============================================
@@ -332,6 +133,8 @@ void HPF(int numOfProcesses) {
         while (!pqIsEmpty(hpfQueue)) {
 
             processToRun = pqDequeue(hpfQueue);
+
+            //! start
             OutFile_Starting(
                 logFile, 
                 1, 
@@ -371,6 +174,7 @@ void HPF(int numOfProcesses) {
             if (!WIFEXITED(status))
                 perror("ERROR exiting the processes\n");
             
+            //! finish
             OutFile_Starting(
                 logFile, 
                 4, 
@@ -413,127 +217,13 @@ void HPF(int numOfProcesses) {
         0, 
         sqrt((double)accum / countProcesses)
     );
+    free(WTA_array);
     fclose(logFile);
     // ====================================================
-    free(WTA_array);
     pqDestruct(hpfQueue);
 
 }
 
-void HPF2(int numOfProcesses) {
-    int countProcesses = numOfProcesses;
-    FILE* logFile = fopen("scheduler.log", "w");		//open the file
-    if (logFile == NULL) {                    //can't open the file
-        printf("ERROR! Could not open file");
-        return;  // ERROR occured
-    }
-    bool isFirst = true;
-    int sumOfRunning = 0;
-    float* WTA_array = (float*)malloc(sizeof(float));
-    int index = 0;
-
-    signal(SIGCHLD, HPFprocessTermHandler);
-    struct Process* processToRun;
-    struct ProcessMsg processMsg;
-    
-    // Construct a priority queue
-    struct PriQueue* hpfQueue = pqConstruct();
-
-    // struct TerminationMsg termMsg;
-    while (1) {
-           
-        pause();
-        if (isReceived) {
-
-            int receivedStatus = msgrcv(msgQueueID, &processMsg, sizeof(processMsg.process), 0, !IPC_NOWAIT);
-            sumOfRunning += processMsg.process.runningTime;
-           
-            struct Process* heapProcess = (struct Process*)malloc(sizeof(struct Process));
-            *heapProcess = processMsg.process;
-            pqEnqueue(hpfQueue, heapProcess, processMsg.process.priority);
-
-            isReceived = false;
-            printf("ARRIVED | CLK: %d \t ID: %d \t Arrival: %d\n", 
-                getClk(), 
-                processMsg.process.id,
-                processMsg.process.arrivalTime
-            );
-        }
-        
-        if (isRunning) continue;
-        if (!isFirst) {
-            OutFile_Starting(
-                logFile, 
-                4, 
-                processToRun->id, 
-                processToRun->arrivalTime,
-                processToRun->runningTime,
-                0,
-                0,  // 0 for HPF
-                getClk()
-            );
-            WTA_array[index++] = 1.0 * (getClk() - processToRun->arrivalTime) / processToRun->runningTime;
-        }
-        isFirst = false;
-    
-        if (numOfProcesses == 0) break;
-        if (pqIsEmpty(hpfQueue)) continue;
-
-        // ==== Run the process ====
-        --numOfProcesses;
-
-        processToRun = pqDequeue(hpfQueue);
-        OutFile_Starting(
-                logFile, 
-                1, 
-                processToRun->id, 
-                processToRun->arrivalTime,
-                processToRun->runningTime,
-                processToRun->remainingTime,
-                0,  // 0 for HPF
-                getClk()
-        );
-       
-
-        isRunning = true;    
-        // Convert the remaining time to string and pass it as a process argument 
-        char remainingTimeString[(int)1e5];
-        sprintf(remainingTimeString, "%d", processToRun->remainingTime);
-        
-        // Fork the arrived process
-        int generatedPid = fork();
-        if (generatedPid == -1) {
-            printf("ERROR occured while forking the process with ID: %d\n", processToRun->id);
-            exit(-1);
-        }
-
-        else if (generatedPid == 0) {
-            execl("process.out", "process.out", remainingTimeString, NULL);
-        }
-        
-    }
-    int finishClk = getClk();
-
-    float sumOfWTA = 0;
-    for (int i = 0; i < countProcesses; ++i)
-        sumOfWTA += WTA_array[i];
-
-    float accum = 0;
-    float avgWTA = sumOfWTA / countProcesses;
-    for (int i = 0; i < countProcesses; ++i)
-        accum += (WTA_array[i] - avgWTA) * (WTA_array[i] - avgWTA);
-
-    printPerfFile(
-        "scheduler.perf", 
-        1.0 * sumOfRunning / finishClk, 
-        avgWTA, 
-        0, 
-        ((double)accum / countProcesses)
-    );
-    // Destruct the priority queue
-    pqDestruct(hpfQueue);
-    fclose(logFile);
-}
 
 void SRTN(int numOfProcesses) {
     signal(SIGUSR2, SRTNprocessTermHandler);
@@ -665,176 +355,39 @@ void SRTN(int numOfProcesses) {
 
 }
 
-void TESTSRTN(int numOfProcesses) {
-    signal(SIGCHLD, SRTNprocessTermHandler);
-    struct Process* processToRun = NULL;
-    //bool isInitial = true;      // Flag: to control if it is the first iteration in the loop or not
-    //isFinishedsr = false;    // Flag: to check if is the last process or not
-    //struct Process* processToRun;//ay process t3mlhA deque hia elt3tbr hia elprocesstorun
-    struct PriQueue* srtnQueue = pqConstruct();
-    struct Process* temp;
-    int startTime=0;
-
-    // Construct a priority queue
-
-    //struct TerminationMsg termMsg;
-    struct ProcessMsg processMsg;//lma ywsl 7aga mn pgenerator ywsloo process by7otha feeh processmsg
-    while (1) {
-        pause();
-        printf("clk after pausing %d\n", getClk());
-        if (isReceived) {
-
-            int receivedStatus = msgrcv(msgQueueID, &processMsg, sizeof(processMsg.process), 0, !IPC_NOWAIT);
-            // pqEnqueue(srtnQueue, &processMsg.process, processMsg.process.runningTime);
-            struct Process* heapProcess = (struct Process*)malloc(sizeof(struct Process));
-            *heapProcess = processMsg.process;
-            pqEnqueue(srtnQueue, heapProcess, processMsg.process.remainingTime);
-
-            isReceived = false;
-            printf("ARRIVED | CLK: %d \t ID: %d \t Arrival: %d\n", 
-                getClk(), 
-                processMsg.process.id,
-                processMsg.process.arrivalTime
-            );
-        }
-        
-        processToRun = pqFront(srtnQueue);
-        //kill(processToRun->pid,SIGCONT);
-        
-         printf("STARTED | CLK: %d     ID: %d    Arriaval: %d    RunningTime: %d    Pri: %d\n",
-             getClk(),
-             processToRun->id,
-             processToRun->arrivalTime,
-             processToRun->runningTime,
-             processToRun->priority
-        );  // FOR DEBUGGING
-
-
-     //   if (numOfProcesses == 0)
-            //isFinished = true;
-
-        // if (processToRun->remainingTime == processToRun->runningTime) {
-
-            // Convert the remaining time to string and pass it as a process argument
-            char remainingTimeString[(int)1e5];
-            sprintf(remainingTimeString, "%d", processMsg.process.remainingTime);
-
-            // Fork the arrived process
-            int generatedPid = fork();
-
-            if (generatedPid != 0) {
-                //pqEnqueue(srtnQueue, &processMsg.process, processMsg.process.remainingTime);
-                processMsg.process.pid = generatedPid;
-                pqEnqueue(srtnQueue, &processMsg.process, processMsg.process.remainingTime);
-                //processToRun = pqDequeue(srtnQueue);
-            }
-            if (generatedPid == 0) {
-                //3mlt process gdeeda e3mlha enque
-                //processMsg.process.pid = generatedPid
-                //pqEnqueue(srtnQueue, &newProcess.process, newProcess.process.runningTime);
-                //processToRun = pqDequeue(srtnQueue);
-                execl("process.out", "process.out", remainingTimeString, NULL);//fork process w t43'lha
-            }
-            kill(generatedPid,SIGSTOP);//processs y5leeh elchild y2of
-        // }
-         temp = pqFront(srtnQueue);
-
-
-        if (startTime==0)
-        {
-            int estimatedrt = processToRun->remainingTime - (getClk() - processToRun->arrivalTime ) ;//
-            processToRun->remainingTime = estimatedrt;
-        }
-        else
-        {
-            int estimatedrt = processToRun->remainingTime - (getClk() - startTime) ;//
-            processToRun->remainingTime = estimatedrt;
-        }
-
-
-        if(temp->remainingTime < processToRun->remainingTime )
-        {
-            kill(processToRun->pid,SIGSTOP);
-            pqEnqueue(srtnQueue, processToRun, processToRun->remainingTime);
-            processToRun=temp;
-            kill(processToRun->pid,SIGCONT);
-
-            startTime=getClk();
-
-        }
-
-       // isInitial = false;
-        //--numOfProcesses;
-        //if (numOfProcesses == 0)
-        //isFinishedsr = true;
-        if(isFinished)
-        {
-            printf("FINISHED | CLK: %d     ID: %d    Arriaval: %d    RunningTime: %d    Pri: %d\n",
-             getClk(),
-             processToRun->id,
-             processToRun->arrivalTime,
-             processToRun->runningTime,
-             processToRun->priority
-            );  // FOR DEBUGGING
-            pqDequeue(srtnQueue);
-            --numOfProcesses;
-            if(numOfProcesses ==0)
-            break;
-            processToRun = pqFront(srtnQueue);
-            kill(processToRun->pid,SIGCONT);
-
-            isFinished = false;
-        }
-            
-    }
-
-    //enque tb2a feeh elready state while deque tb2a runnuing
-    // Destruct the priority queue
-    pqDestruct(srtnQueue);
-}
 
 void RR(int numOfProcesses, int quantum) {
 
-
+     // ========= for the O/P File ================
+    int countProcesses = numOfProcesses;
+    FILE* logFile = fopen("scheduler.log", "w");		
+    if (logFile == NULL) {                    
+        printf("ERROR! Could not open file");
+        return;  // ERROR occured
+    }
+    int sumOfRunning = 0;
+    float* WTA_array = (float*)malloc(sizeof(float) * numOfProcesses);
+    float* Waiting_array = (float*)malloc(sizeof(float) * numOfProcesses);
+    int index_wta = 0;
+    int index_waiting = 0;
+    int finishClk;
+    // ============================================
 
     signal(SIGALRM, RRalarmHandler);
-
-
-
     struct Process* processToRun = NULL;
-
-   
-
     struct ProcessMsg processMsg;
-
-
-
+    
     int startTime;
-
     int generatedPid;
-
     int receivedStatus;
-
-
-
-
 
     // Construct a queue
 
     struct Queue* RRQueue = qConstruct();
-
     struct Queue* STOPPED_RR = qConstruct();
 
-
-
     while(1) {
-
-
-
         receivedStatus = 1;
-
-
-
         while (receivedStatus != -1)
 
         {
@@ -859,7 +412,7 @@ void RR(int numOfProcesses, int quantum) {
 
             );
 
-
+            sumOfRunning += processMsg.process.runningTime;
 
             struct Process* heapProcess = (struct Process*)malloc(sizeof(struct Process));
 
@@ -874,9 +427,6 @@ void RR(int numOfProcesses, int quantum) {
         if (qFront(RRQueue) != NULL)
 
         {
-
-            
-
             processToRun = qDequeue(RRQueue);
 
             /*
@@ -947,55 +497,44 @@ void RR(int numOfProcesses, int quantum) {
 
                // if (processToRun -> status == NOTFORKED)
 
-                
-
+                    int arrClk = getClk();
+                    //! started
+                    processToRun->waitingTime = arrClk - processToRun->arrivalTime;
                     printf("Started | CLK: %d \t ID: %d\n", 
-
-                    getClk(), 
-
-                    processToRun -> id
-
+                        arrClk, 
+                        processToRun -> id
                     );
 
-
+                    OutFile_Starting(
+                        logFile,
+                        1,
+                        processToRun->id,
+                        processToRun->arrivalTime,
+                        processToRun->runningTime,
+                        processToRun->remainingTime,
+                        processToRun->waitingTime,
+                        arrClk
+                    );
 
                     generatedPid = fork();
 
-
-
                     if (generatedPid == -1) {
-
                         printf("ERROR occured while forking the process with ID: %d\n", processToRun->id);
-
                         exit(-1);
-
                     }
 
-
-
                     if (generatedPid == 0) {
-
-
 
                         if (processToRun->remainingTime > quantum)
 
                         {
-
                             execl("process.out", "process.out", quantumString, NULL);
-
                         }
-
-                
 
                         else
-
                         {
-
                             execl("process.out", "process.out", remainingTimeString, NULL);
-
                         }
-
-                    
 
                     }
 
@@ -1029,24 +568,32 @@ void RR(int numOfProcesses, int quantum) {
 
                             sleep(quantum);
 
-
+                            int stoppedClk = getClk();
 
                             processToRun->remainingTime -= quantum;
 
 
-
+                            // ! stopped
+                            processToRun->waitingTime = stoppedClk - (processToRun->runningTime - processToRun->remainingTime) - processToRun->arrivalTime;
+                            
                             printf("Stopped after start | CLK: %d \t ID: %d \t Arrival: %d \t Running: %d\n", 
 
                                 getClk(), 
-
                                 processToRun->id,
-
                                 processToRun->arrivalTime,
-
                                 processToRun->runningTime
+                            );
 
-                                );
-
+                            OutFile_Starting(
+                                logFile,
+                                2,
+                                processToRun->id,
+                                processToRun->arrivalTime,
+                                processToRun->runningTime,
+                                processToRun->remainingTime,
+                                processToRun->waitingTime,
+                                stoppedClk
+                            );
 
 
                             kill (processToRun->pid,SIGSTOP);
@@ -1076,7 +623,7 @@ void RR(int numOfProcesses, int quantum) {
 
 
                             sleep(processToRun -> remainingTime);
-
+                            finishClk = getClk();
 
 
                             //alarm (processToRun -> remainingTime);
@@ -1084,7 +631,13 @@ void RR(int numOfProcesses, int quantum) {
                             //pause ();
 
 
+                            //! finished
+                            processToRun->remainingTime = 0;
 
+                            processToRun->waitingTime = finishClk - (processToRun->runningTime - processToRun->remainingTime) - processToRun->arrivalTime;
+                            WTA_array[index_wta++] = 1.0 * (finishClk - processToRun->arrivalTime) / processToRun->runningTime;
+                            Waiting_array[index_waiting++] = processToRun->waitingTime;
+                            
                             printf("Finished | CLK: %d \t ID: %d \t Arrival: %d \t Running: %d\n", 
 
                                 getClk(), 
@@ -1095,6 +648,17 @@ void RR(int numOfProcesses, int quantum) {
 
                                 processToRun->runningTime
 
+                                );
+
+                                OutFile_Starting(
+                                    logFile,
+                                    4,
+                                    processToRun->id,
+                                    processToRun->arrivalTime,
+                                    processToRun->runningTime,
+                                    0,
+                                    processToRun->waitingTime,
+                                    finishClk
                                 );
 
                             numOfProcesses--;
@@ -1119,12 +683,11 @@ void RR(int numOfProcesses, int quantum) {
 
                         processToRun = qDequeue(STOPPED_RR);
 
-                        
-
                         if (processToRun->remainingTime > quantum)
 
                         {
 
+                            //! continue
                             printf("Continued | CLK: %d \t ID: %d \t Arrival: %d \t Running: %d\n", 
 
                             getClk(), 
@@ -1137,7 +700,18 @@ void RR(int numOfProcesses, int quantum) {
 
                             );
 
-
+                            processToRun->waitingTime = getClk() - (processToRun->runningTime - processToRun->remainingTime) - processToRun->arrivalTime;
+                            
+                            OutFile_Starting(
+                                logFile,
+                                3,
+                                processToRun->id,
+                                processToRun->arrivalTime,
+                                processToRun->runningTime,
+                                processToRun->remainingTime,
+                                processToRun->waitingTime,
+                                getClk()
+                            );
 
                             kill (processToRun->pid, SIGCONT);
 
@@ -1152,7 +726,7 @@ void RR(int numOfProcesses, int quantum) {
 
 
                             sleep(quantum);
-
+                            int stoppedClk = getClk();
 
 
                             //alarm(quantum);
@@ -1164,7 +738,8 @@ void RR(int numOfProcesses, int quantum) {
                             processToRun->remainingTime -= quantum;
 
 
-
+                            //! stopped
+                            processToRun->waitingTime = stoppedClk - (processToRun->runningTime - processToRun->remainingTime) - processToRun->arrivalTime;
                             kill (processToRun->pid,SIGSTOP);
 
 
@@ -1185,7 +760,16 @@ void RR(int numOfProcesses, int quantum) {
 
                             );
 
-
+                             OutFile_Starting(
+                                    logFile,
+                                    2,
+                                    processToRun->id,
+                                    processToRun->arrivalTime,
+                                    processToRun->runningTime,
+                                    processToRun->remainingTime,
+                                    processToRun->waitingTime,
+                                    stoppedClk
+                                );
 
                             qEnqueue (STOPPED_RR,processToRun);
 
@@ -1200,6 +784,9 @@ void RR(int numOfProcesses, int quantum) {
                         {
 
                         
+                            //! continue
+                            int contClk = getClk();
+                            processToRun->waitingTime = contClk - (processToRun->runningTime - processToRun->remainingTime) - processToRun->arrivalTime;
 
                             printf("Continued | CLK: %d \t ID: %d \t Arrival: %d \t Running: %d\n", 
 
@@ -1213,6 +800,16 @@ void RR(int numOfProcesses, int quantum) {
 
                             );
 
+                             OutFile_Starting(
+                                logFile,
+                                3,
+                                processToRun->id,
+                                processToRun->arrivalTime,
+                                processToRun->runningTime,
+                                processToRun->remainingTime,
+                                processToRun->waitingTime,
+                                contClk
+                            );
 
 
                             kill (processToRun->pid, SIGCONT);
@@ -1231,13 +828,18 @@ void RR(int numOfProcesses, int quantum) {
 
                             sleep (processToRun -> remainingTime);
 
-
+                            finishClk = getClk();
 
                             //alarm (processToRun -> remainingTime);
 
                             //pause();
 
 
+                            //! finished
+                            processToRun->waitingTime = finishClk - (processToRun->runningTime - processToRun->remainingTime) - processToRun->arrivalTime;
+                            WTA_array[index_wta++] = 1.0 * (finishClk - processToRun->arrivalTime) / processToRun->runningTime;
+                            Waiting_array[index_waiting++] = processToRun->waitingTime;
+                            
 
                             printf("Finished after CONT | CLK: %d \t ID: %d \t Arrival: %d \t Running: %d\n", 
 
@@ -1250,7 +852,16 @@ void RR(int numOfProcesses, int quantum) {
                             processToRun->runningTime
 
                             );
-
+                             OutFile_Starting(
+                                logFile,
+                                4,
+                                processToRun->id,
+                                processToRun->arrivalTime,
+                                processToRun->runningTime,
+                                0,
+                                processToRun->waitingTime,
+                                finishClk
+                            );
 
 
                             numOfProcesses--;    
@@ -1262,129 +873,41 @@ void RR(int numOfProcesses, int quantum) {
             }
 
             if (numOfProcesses == 0)
-
                 break;
 
         }
 
 
+    // ============ For O/P File ===========================
+    float sumOfWTA = 0;
+    float sumOfWaiting = 0;
+    for (int i = 0; i < countProcesses; ++i) {
+        sumOfWTA += WTA_array[i];
+        sumOfWaiting += Waiting_array[i];
+    }
+
+    float accum = 0;
+    float avgWTA = sumOfWTA / countProcesses;
+    float avgWaiting = sumOfWaiting / countProcesses;
+
+    for (int i = 0; i < countProcesses; ++i)
+        accum += (WTA_array[i] - avgWTA) * (WTA_array[i] - avgWTA);
+
+    printPerfFile(
+        "scheduler.perf", 
+        1.0 * sumOfRunning / finishClk, 
+        avgWTA, 
+        avgWaiting, 
+        sqrt((double)accum / countProcesses)
+    );
+    free(WTA_array);
+    free(Waiting_array);
+    
+    fclose(logFile);
+    // ====================================================
 
      qDestruct(RRQueue);
 
      qDestruct(STOPPED_RR);
 
 }
-
-
-
-
-
-// void TEST(int numOfProcesses) {
-    
-//     bool isInitial = true;      // Flag: to control if it is the first iteration in the loop or not
-//     bool isFinished = false;    // Flag: to check if is the last process or not
-//     struct Process* processToRun;
-//     int startTime;
-
-//     // Construct a priority queue
-//     struct PriQueue* hpfQueue = pqConstruct();
-
-//     // struct TerminationMsg termMsg;
-//     struct ProcessMsg processMsg;
-//     while (1) {
-
-//          // Receive process info from the generator once arrived
-//         int isReceived = msgrcv(msgQueueID, &processMsg, sizeof(processMsg) - sizeof(processMsg.type), 0, IPC_NOWAIT);
-
-//         if (isReceived != -1) {     // If received new process info, enqueue it
-//             // printf("ARRIVED | CLK: %d     ID: %d    Arriaval: %d    RunningTime: %d    Pri: %d\n", 
-//             //     getClk(),
-//             //     processMsg.process.id, 
-//             //     processMsg.process.arrivalTime, 
-//             //     processMsg.process.runningTime,
-//             //     processMsg.process.priority
-//             // );  // FOR DEBUGGING
-
-//             pqEnqueue(hpfQueue, &processMsg.process, processMsg.process.priority);
-//         }
-
-//         if (!isInitial && startTime + processToRun->runningTime > getClk()) {
-//             continue;
-//         }
-
-
-//             // Wait for the processToRun to be terminated with NO HANG
-//         if (!isInitial) {
-//             //* NOTE: The finishClk time returned from the process as an exit code
-//             int status;
-//             int child_pid = waitpid(processToRun->pid, &status, WNOHANG);
-//             // if (!WIFEXITED(status))
-//             //     perror("ERROR in process termination\n");
-//             // else {
-//                 printf("CLK: %d     Process with PID: %d is terminated successfully with Finish Time: %d\n", getClk(), child_pid, WEXITSTATUS(status));
-//                 processToRun->finishTime = WEXITSTATUS(status);
-//             // }
-    
-//             // printf("FINISHED | CLK: %d     ID: %d    Arriaval: %d    RunningTime: %d    Pri: %d  Finish Time: %d\n", 
-//             //     getClk(),
-//             //     processToRun->id, 
-//             //     processToRun->arrivalTime, 
-//             //     processToRun->runningTime,
-//             //     processToRun->priority,
-//             //     processToRun->finishTime
-//             // );  // FOR DEBUGGING
-    
-//         }
-
-
-//         // int ReceivedFinishTime = msgrcv(msgQueueProcessID, &termMsg, sizeof(termMsg) - sizeof(termMsg.type), 0, IPC_NOWAIT);
-//         // if (ReceivedFinishTime != -1) { // if received     
-//         //     processToRun->finishTime = termMsg.finishTime;
-
-//         // }
-
-
-//         if (isFinished)
-//             break;
-
-//         if (pqIsEmpty(hpfQueue))
-//             continue;
-
-//         processToRun = pqDequeue(hpfQueue);
-
-//         // printf("STARTED | CLK: %d     ID: %d    Arriaval: %d    RunningTime: %d    Pri: %d\n", 
-//         //     getClk(),
-//         //     processToRun->id, 
-//         //     processToRun->arrivalTime, 
-//         //     processToRun->runningTime,
-//         //     processToRun->priority
-//         // );  // FOR DEBUGGING
-
-
-//         --numOfProcesses;
-//         if (numOfProcesses == 0)
-//             isFinished = true;
-        
-//         // Convert the remaining time to string and pass it as a process argument 
-//         char remainingTimeString[(int)1e5];
-//         sprintf(remainingTimeString, "%d", processToRun->remainingTime);
-        
-//         // Fork the arrived process
-//         int generatedPid = fork();
-//         if (generatedPid == -1) {
-//             printf("ERROR occured while forking the process with ID: %d\n", processToRun->id);
-//             exit(-1);
-//         }
-
-//         if (generatedPid == 0) {
-//             execl("process.out", "process.out", remainingTimeString, NULL);
-//         }
-//         startTime = getClk();
-//         processToRun->pid = generatedPid;   
-        
-//         isInitial = false;
-//     }
-
-//     // Destruct the priority queue
-//     pqDestruct(hpfQueue);
-// }

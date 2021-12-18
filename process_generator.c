@@ -25,11 +25,11 @@ int main(int argc, char * argv[])
     signal(SIGINT, clearResources);
 
     // 1. Read the input files.
-    char filePath[100];
-    printf("Enter the input file path: ");
-    scanf("%s", filePath); 
+    // char filePath[100];
+    // printf("Enter the input file path: ");
+    // scanf("%s", filePath); 
     // read an input file specified and put it in processes.
-    struct Process* processes;  //! array of processes, DON'T forget to DELETE it later
+    struct Process* processes;  
     int numOfProcesses = readFile("testProcesses2.txt", &processes); // returns the number of processes created
     if (numOfProcesses == -1)
         exit(-1);
@@ -122,7 +122,7 @@ int main(int argc, char * argv[])
         processes[i].finishTime = 0;
         // processes[i].status = NOT_ARRIVED;           
         processMsg.process = processes[i];
-        kill(schedulerPID, SIGUSR1);
+        // kill(schedulerPID, SIGUSR1);
         int isSent = msgsnd(msgQueueID, &processMsg, sizeof(processMsg.process), !IPC_NOWAIT);
         if (isSent == -1) {
             perror("ERROR occured during sending the process information to the scheduler\n");

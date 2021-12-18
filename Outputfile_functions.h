@@ -42,7 +42,7 @@ void OutFile_Starting (FILE* logFile, int status, int id_curProc, int AT_curProc
 	}
 	else if (status == 4)
 	{
-		fprintf(logFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",clk,id_curProc,AT_curProc,RunT_curProc,RemT_curProc,WaitT_curProc,clk-AT_curProc,(clk-AT_curProc)/1.0 * (RunT_curProc));
+		fprintf(logFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",clk,id_curProc,AT_curProc,RunT_curProc,RemT_curProc,WaitT_curProc,clk-AT_curProc,(clk-AT_curProc)/(1.0 * (RunT_curProc)));
 	}
 	else
 	{
