@@ -58,7 +58,7 @@ void printPerfFile(const char* filePath, float utilization, float avgWTA, float 
         printf("ERROR! Could not open file %s\n", filePath);
         return;  // ERROR occured
     }
-    fprintf(perfFile, "CPU utilization = %.2f%%\n", utilization);
+    fprintf(perfFile, "CPU utilization = %.2f%%\n", utilization * 100);
     fprintf(perfFile, "Avg WTA = %.2f\n", avgWTA);
     fprintf(perfFile, "Avg Waiting = %.2f\n", avgWaiting);
     fprintf(perfFile, "Std WTA = %.2lf", ((double)stdWTA));
